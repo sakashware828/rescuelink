@@ -2,3 +2,6 @@ fastapi
 uvicorn
 websockets
 paho-mqtt
+jinja2
+python-multipart
+sqlalchemy

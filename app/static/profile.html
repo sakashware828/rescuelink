@@ -3,221 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Registered Profile</title>
-  <style>
-    :root {
-      --primary: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding-bottom: 24px;
-    }
-
-    /* Navigation Header */
-    .nav-bar {
-      width: 100%;
-      background: #ffffff;
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 32px;
-    }
-
-    .nav-brand {
-      font-weight: 700;
-      color: var(--primary);
-      text-transform: uppercase;
-      font-size: 14px;
-      letter-spacing: 1.2px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 16px;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 600;
-      transition: color 0.2s ease;
-    }
-
-    .nav-links a:hover, .nav-links a.active {
-      color: var(--primary);
-    }
-
-    .card {
-      background: var(--card-bg);
-      width: 100%;
-      max-width: 480px;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-      border: 1px solid var(--border);
-    }
-
-    .badge {
-      display: inline-block;
-      background-color: #dcfce7;
-      color: #15803d;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-    }
-
-    h2 {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .device-id {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 24px;
-      font-family: monospace;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      border-top: 1px solid var(--border);
-      padding-top: 20px;
-      margin-bottom: 20px;
-    }
-
-    .info-item label {
-      display: block;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .info-item span {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .full-width {
-      grid-column: span 2;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    .btn {
-      flex: 1;
-      text-align: center;
-      padding: 10px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      transition: background-color 0.2s;
-    }
-
-    .btn-primary {
-      background-color: var(--primary);
-      color: white;
-    }
-
-    .btn-secondary {
-      background-color: #f1f5f9;
-      color: #475569;
-    }
-
-    .btn-secondary:hover {
-      background-color: #e2e8f0;
-    }
-  </style>
+  <title>RescueLink — Node Profile Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
 
-  <!-- Top Navigation Header -->
-  <nav class="nav-bar">
-    <span class="nav-brand">RescueLink System</span>
-    <div class="nav-links">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/registration">Registration</a>
-      <a href="/profile" class="active">Profile</a>
+  <!-- Navigation Header -->
+  <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
+      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Profile Lookup</span></span>
+    </div>
+    <div class="flex space-x-4 text-sm font-semibold">
+      <a href="/dashboard" class="text-slate-400 hover:text-white transition">Dashboard</a>
+      <a href="/registration" class="text-slate-400 hover:text-white transition">Registration</a>
+      <a href="/profile" class="text-red-400 border-b-2 border-red-500 pb-0.5">Profile</a>
     </div>
   </nav>
 
-  <div class="card">
-    <span class="badge">✓ Active Device Registered</span>
-    <h2 id="profName">---</h2>
-    <div class="device-id">ID: <span id="profDeviceId">---</span></div>
-
-    <div class="info-grid">
-      <div class="info-item">
-        <label>Age</label>
-        <span id="profAge">---</span>
+  <!-- Main Profile Lookup Section -->
+  <div class="flex-1 flex flex-col justify-center items-center p-6">
+    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl space-y-6">
+      <div class="border-b border-slate-700 pb-4">
+        <h2 class="text-xl font-bold text-slate-100">Search Device Profile</h2>
+        <p class="text-xs text-slate-400 mt-1">Lookup registered medical details by entering a hardware node ID.</p>
       </div>
 
-      <div class="info-item">
-        <label>Blood Group</label>
-        <span id="profBlood">---</span>
+      <div class="flex space-x-2">
+        <input type="text" id="searchDeviceId" placeholder="Enter Device ID (e.g. ESP32-NODE-01)" 
+          class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 text-sm">
+        <button onclick="fetchProfile()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition">
+          Search
+        </button>
       </div>
 
-      <div class="info-item full-width">
-        <label>Emergency Contact</label>
-        <span id="profContact">---</span>
+      <!-- Result Card -->
+      <div id="profileResult" class="hidden bg-slate-900 border border-slate-700/80 rounded-lg p-5 space-y-3 text-sm">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <span class="text-xs uppercase font-bold text-slate-400">Device ID</span>
+          <span id="resDeviceId" class="font-bold text-red-400"></span>
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Victim Name:</span>
+          <span id="resName" class="font-semibold text-slate-100 text-base"></span>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-xs text-slate-400 block">Blood Group:</span>
+            <span id="resBlood" class="font-semibold text-slate-200"></span>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 block">Emergency Contact:</span>
+            <span id="resContact" class="font-semibold text-slate-200"></span>
+          </div>
+        </div>
+        <div>
+          <span class="text-xs text-slate-400 block">Critical Allergies / Notes:</span>
+          <span id="resNotes" class="text-slate-300 italic"></span>
+        </div>
       </div>
 
-      <div class="info-item full-width">
-        <label>Medical Conditions / Allergies</label>
-        <span id="profConditions">---</span>
+      <div id="notFoundMsg" class="hidden text-center text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+        No registered profile found for this Device ID.
       </div>
-    </div>
-
-    <div class="actions">
-      <a href="/registration" class="btn btn-secondary">Edit Profile</a>
-      <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
     </div>
   </div>
 
   <script>
-    // Fetch profile data saved from registration
-    const data = localStorage.getItem("userProfile");
+    async function fetchProfile() {
+      const devId = document.getElementById("searchDeviceId").value.trim();
+      const resultCard = document.getElementById("profileResult");
+      const notFoundMsg = document.getElementById("notFoundMsg");
 
-    if (data) {
-      const profile = JSON.parse(data);
-      document.getElementById("profName").textContent = profile.full_name || profile.name || "N/A";
-      document.getElementById("profDeviceId").textContent = profile.device_id || "N/A";
-      document.getElementById("profAge").textContent = profile.age || "N/A";
-      document.getElementById("profBlood").textContent = profile.blood_group || "N/A";
-      document.getElementById("profContact").textContent = profile.emergency_contact || "N/A";
-      document.getElementById("profConditions").textContent = profile.allergies || profile.medical_conditions || "None reported";
-    } else {
-      alert("No registered profile found. Please register your device first.");
-      window.location.href = "/registration";
+      if (!devId) return;
+
+      try {
+        const res = await fetch(`/api/profile/${encodeURIComponent(devId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("resDeviceId").textContent = data.device_id;
+          document.getElementById("resName").textContent = data.victim_name;
+          document.getElementById("resBlood").textContent = data.blood_group;
+          document.getElementById("resContact").textContent = data.emergency_contact;
+          document.getElementById("resNotes").textContent = data.critical_allergies || "None";
+          
+          resultCard.classList.remove("hidden");
+          notFoundMsg.classList.add("hidden");
+        } else {
+          resultCard.classList.add("hidden");
+          notFoundMsg.classList.remove("hidden");
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      }
     }
   </script>
 </body>
