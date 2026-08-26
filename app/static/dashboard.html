@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RescueLink — Responder Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <style>
+    :root {
+      --primary: #dc2626;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Navigation Header */
+    .nav-bar {
+      width: 100%;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .nav-brand {
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      font-size: 14px;
+      letter-spacing: 1.2px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--primary);
+    }
+
+    /* Dashboard Layout */
+    .dashboard-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 53px);
+    }
+
+    #sidebar {
+      width: 360px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      box-sizing: border-box;
+      background: #fafafa;
+    }
+
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+
+    h2 { margin-top: 0; font-size: 18px; color: #333; }
+    .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ccc; margin-right: 6px; }
+    .status-indicator.connected { background: #2ecc71; }
+    .status-indicator.disconnected { background: #e74c3c; }
+    .alert-card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fff; cursor: pointer; transition: transform 0.1s ease; }
+    .alert-card:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .alert-card.sos { border-left: 5px solid #c0392b; }
+    .alert-card.fall { border-left: 5px solid #e67e22; }
+    .name { font-weight: bold; font-size: 15px; color: #111; }
+    .meta { font-size: 12px; color: #555; margin-top: 4px; }
+    .badge { display: inline-block; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px; margin-top: 8px; text-transform: uppercase; }
+    .badge.sos { background: #fadbd8; color: #78281f; }
+    .badge.fall { background: #fdebd0; color: #7e5109; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <nav class="nav-bar">
+    <span class="nav-brand">RescueLink System</span>
+    <div class="nav-links">
+      <a href="/dashboard" class="active">Dashboard</a>
+      <a href="/registration">Registration</a>
+      <a href="/profile">Profile</a>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <div id="sidebar">
+      <h2><span id="connStatus" class="status-indicator"></span> Incoming Alerts</h2>
+      <div id="alertList">Waiting for incoming telemetry stream...</div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    const map = L.map('map').setView([19.0760, 72.8777], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const alertsList = [];
+    const markers = {};
+    const alertListEl = document.getElementById("alertList");
+    const connStatusEl = document.getElementById("connStatus");
+
+    // Establish WebSocket connection to backend
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      connStatusEl.className = "status-indicator connected";
+      if (alertsList.length === 0) {
+        alertListEl.textContent = "Connected. Waiting for live telemetry...";
+      }
+    };
+
+    socket.onclose = () => {
+      connStatusEl.className = "status-indicator disconnected";
+    };
+
+    socket.onerror = (err) => {
+      connStatusEl.className = "status-indicator disconnected";
+      console.error("WebSocket Error:", err);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        payload.received_at = new Date().toISOString();
+        
+        alertsList.unshift(payload); // Push new alerts to top
+        renderList();
+        addMarker(payload);
+      } catch (e) {
+        console.error("Error parsing WebSocket payload:", e);
+      }
+    };
+
+    function renderList() {
+      if (alertsList.length === 0) {
+        alertListEl.innerHTML = "<p>No active alerts.</p>";
+        return;
+      }
+
+      alertListEl.innerHTML = alertsList.map((a) => {
+        const isSos = a.sos_triggered;
+        const triggerClass = isSos ? "sos" : "fall";
+        const triggerLabel = isSos ? "Manual SOS Triggered" : "Fall Detected";
+
+        return `
+          <div class="alert-card ${triggerClass}" onclick="focusMarker(${a.latitude}, ${a.longitude})">
+            <div class="name">${a.victim_name || "Unknown Victim"}</div>
+            <div class="meta"><strong>Device:</strong> ${a.device_id} — ${new Date(a.received_at).toLocaleTimeString()}</div>
+            <div class="meta"><strong>Blood Group:</strong> ${a.blood_group || "Unknown"}</div>
+            <div class="meta"><strong>Allergies/Notes:</strong> ${a.critical_allergies || "None"}</div>
+            <span class="badge ${triggerClass}">${triggerLabel}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function addMarker(a) {
+      const markerKey = `${a.device_id}-${a.latitude}-${a.longitude}`;
+      
+      const triggerLabel = a.sos_triggered ? "Manual SOS" : "Fall Detected";
+      const marker = L.marker([a.latitude, a.longitude]).addTo(map)
+        .bindPopup(`
+          <b>${a.victim_name || "Unknown Victim"}</b><br>
+          <b>Alert:</b> ${triggerLabel}<br>
+          <b>Blood Group:</b> ${a.blood_group || "N/A"}<br>
+          <b>Time:</b> ${new Date(a.received_at).toLocaleTimeString()}
+        `);
+
+      markers[markerKey] = marker;
+      map.setView([a.latitude, a.longitude], 14);
+      marker.openPopup();
+    }
+
+    function focusMarker(lat, lng) {
+      map.setView([lat, lng], 15);
+    }
+  </script>
+</body>
+</html>

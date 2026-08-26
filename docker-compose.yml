@@ -1,0 +1,42 @@
+services:
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=timescaledb
+      - MQTT_HOST=mosquitto
+    depends_on:
+      - redis
+      - timescaledb
+      - mosquitto
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  timescaledb:
+    image: timescale/timescaledb-ha:pg16
+    environment:
+      POSTGRES_PASSWORD: rescuelink_dev
+      POSTGRES_DB: rescuelink
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/home/postgres/pgdata/data
+
+volumes:
+  timescale_data:
