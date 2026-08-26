@@ -1,15 +1,15 @@
 import json
 from typing import List
-from fastapi import FastAPI, Depends, Form, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.database import init_db, get_db, VictimProfile, IncidentLog
 
 app = FastAPI(title="RescueLink System")
 
-# Mount static directory for CSS, JS, and static HTML files
+# Mount static directory for CSS, JS, and static assets
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -17,6 +17,21 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+
+# Helper function to serve HTML files without browser caching glitches
+def render_no_cache(filepath: str) -> Response:
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
+    return Response(
+        content=content,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -46,25 +61,22 @@ manager = ConnectionManager()
 
 
 # -----------------------------------------------------------------------------
-# Frontend Page Routes
+# Frontend Page Routes (No-Cache Headers Applied)
 # -----------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 @app.get("/dashboard", response_class=HTMLResponse)
 async def read_dashboard():
-    with open("app/static/dashboard.html", "r", encoding="utf-8") as f:
-        return f.read()
+    return render_no_cache("app/static/dashboard.html")
 
 
 @app.get("/registration", response_class=HTMLResponse)
 async def read_registration():
-    with open("app/static/registration.html", "r", encoding="utf-8") as f:
-        return f.read()
+    return render_no_cache("app/static/registration.html")
 
 
 @app.get("/profile", response_class=HTMLResponse)
 async def read_profile():
-    with open("app/static/profile.html", "r", encoding="utf-8") as f:
-        return f.read()
+    return render_no_cache("app/static/profile.html")
 
 
 # -----------------------------------------------------------------------------
@@ -74,7 +86,7 @@ async def read_profile():
 async def register_victim(
     device_id: str = Form(...),
     victim_name: str = Form(...),
-    blood_group: str = Form(...),
+    blood_group: str = Form("O+"),
     critical_allergies: str = Form("None"),
     emergency_contact: str = Form(...),
     db: Session = Depends(get_db)
@@ -97,6 +109,14 @@ async def register_victim(
     
     db.commit()
     return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@app.get("/api/profile/{device_id}")
+async def get_victim_profile(device_id: str, db: Session = Depends(get_db)):
+    profile = db.query(VictimProfile).filter(VictimProfile.device_id == device_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return profile
 
 
 @app.post("/api/telemetry")
@@ -146,16 +166,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            # Keep connection open to listen or send periodic heartbeats
             data = await websocket.receive_text()
-            # If clients send messages, echo back or process accordingly
             await manager.broadcast(data)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-
-@app.get("/api/profile/{device_id}")
-async def get_victim_profile(device_id: str, db: Session = Depends(get_db)):
-    profile = db.query(VictimProfile).filter(VictimProfile.device_id == device_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
