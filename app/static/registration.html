@@ -100,18 +100,30 @@
       const btnText = document.getElementById("btnText");
       btnText.textContent = "Linking Hardware Profile...";
 
-      const formData = new FormData(e.target);
+      // Build JSON payload matching the Profile database model fields
+      const payload = {
+        device_id: document.getElementById("device_id").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        age: parseInt(document.getElementById("age").value, 10),
+        blood_group: document.getElementById("blood_group").value,
+        emergency_contact: document.getElementById("emergency_contact").value.trim(),
+        medical_conditions: document.getElementById("medical_conditions").value.trim()
+      };
 
       try {
         const res = await fetch("/api/register", {
           method: "POST",
-          body: formData
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
         });
 
         if (res.ok) {
           window.location.replace("/dashboard");
         } else {
-          alert("Error registering hardware node. Please check your inputs.");
+          const errData = await res.json().catch(() => ({}));
+          alert("Error registering hardware node: " + (errData.detail || "Invalid input format"));
           btnText.textContent = "Save & Link Hardware Profile";
         }
       } catch (err) {
