@@ -1,11 +1,13 @@
 import os
+import re
 from datetime import datetime
 from typing import List
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Form, HTTPException, status, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -29,6 +31,9 @@ class Profile(Base):
     blood_group = Column(String)
     medical_conditions = Column(String)
     emergency_contact = Column(String)
+    govt_id_type = Column(String)       # e.g., "Aadhaar", "Passport", "DL"
+    govt_id_number = Column(String)     # Stored securely / masked
+    is_verified = Column(Boolean, default=False)
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -48,6 +53,31 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Helper function: Basic structural validation for government IDs
+def validate_govt_id(id_type: str, id_number: str) -> bool:
+    clean_id = id_number.replace(" ", "").strip()
+    if id_type == "Aadhaar":
+        return bool(re.match(r"^\d{12}$", clean_id))  # 12 numeric digits
+    elif id_type == "PAN":
+        return bool(re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", clean_id.upper()))
+    elif id_type == "Passport":
+        return bool(re.match(r"^[A-Z1-9][0-9]{7}$", clean_id.upper()))
+    elif id_type == "Driver License":
+        return len(clean_id) >= 8
+    return len(clean_id) >= 5
+
+# -------------------------------------------------------------------
+# Pydantic Schemas
+# -------------------------------------------------------------------
+class ProfileUpdateSchema(BaseModel):
+    name: str
+    age: int
+    blood_group: str
+    emergency_contact: str
+    medical_conditions: str = ""
+    govt_id_type: str
+    govt_id_number: str
 
 # -------------------------------------------------------------------
 # WebSocket Connection Manager
@@ -114,14 +144,43 @@ async def get_user_profile(device_id: str, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.device_id == device_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="No profile found for this Device ID.")
+    
+    # Mask ID for privacy (e.g. XXXX-XXXX-1234)
+    raw_id = profile.govt_id_number or ""
+    masked_id = "XXXX-XXXX-" + raw_id[-4:] if len(raw_id) >= 4 else "VERIFIED"
+
     return {
         "device_id": profile.device_id,
         "name": profile.name,
         "age": profile.age,
         "blood_group": profile.blood_group,
         "medical_conditions": profile.medical_conditions,
-        "emergency_contact": profile.emergency_contact
+        "emergency_contact": profile.emergency_contact,
+        "govt_id_type": profile.govt_id_type or "Aadhaar",
+        "govt_id_number": masked_id,
+        "is_verified": profile.is_verified
     }
+
+@app.put("/api/profile/{device_id}")
+async def update_user_profile(device_id: str, payload: ProfileUpdateSchema, db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.device_id == device_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found.")
+    
+    if not validate_govt_id(payload.govt_id_type, payload.govt_id_number):
+        raise HTTPException(status_code=400, detail=f"Invalid {payload.govt_id_type} format. Verification failed.")
+
+    profile.name = payload.name
+    profile.age = payload.age
+    profile.blood_group = payload.blood_group
+    profile.emergency_contact = payload.emergency_contact
+    profile.medical_conditions = payload.medical_conditions
+    profile.govt_id_type = payload.govt_id_type
+    profile.govt_id_number = payload.govt_id_number
+    profile.is_verified = True
+    
+    db.commit()
+    return JSONResponse(content={"status": "success", "message": "Profile updated & identity verified."})
 
 @app.post("/api/register")
 async def register_node(request: Request, db: Session = Depends(get_db)):
@@ -135,6 +194,8 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
         blood_group = data.get("blood_group")
         medical_conditions = data.get("medical_conditions") or data.get("critical_allergies")
         emergency_contact = data.get("emergency_contact")
+        govt_id_type = data.get("govt_id_type", "Aadhaar")
+        govt_id_number = data.get("govt_id_number", "")
     else:
         form = await request.form()
         device_id = form.get("device_id")
@@ -143,9 +204,14 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
         blood_group = form.get("blood_group")
         medical_conditions = form.get("medical_conditions") or form.get("critical_allergies")
         emergency_contact = form.get("emergency_contact")
+        govt_id_type = form.get("govt_id_type", "Aadhaar")
+        govt_id_number = form.get("govt_id_number", "")
 
-    if not device_id or not name:
-        raise HTTPException(status_code=400, detail="Missing required fields: device_id and name.")
+    if not device_id or not name or not govt_id_number:
+        raise HTTPException(status_code=400, detail="Missing required fields including Government ID.")
+
+    if not validate_govt_id(govt_id_type, govt_id_number):
+        raise HTTPException(status_code=400, detail=f"Invalid {govt_id_type} format. Verification failed.")
 
     profile = db.query(Profile).filter(Profile.device_id == device_id).first()
     if profile:
@@ -154,6 +220,9 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
         profile.blood_group = blood_group
         profile.medical_conditions = medical_conditions
         profile.emergency_contact = emergency_contact
+        profile.govt_id_type = govt_id_type
+        profile.govt_id_number = govt_id_number
+        profile.is_verified = True
     else:
         profile = Profile(
             device_id=device_id,
@@ -161,12 +230,15 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
             age=age,
             blood_group=blood_group,
             medical_conditions=medical_conditions,
-            emergency_contact=emergency_contact
+            emergency_contact=emergency_contact,
+            govt_id_type=govt_id_type,
+            govt_id_number=govt_id_number,
+            is_verified=True
         )
         db.add(profile)
 
     db.commit()
-    return JSONResponse(content={"status": "success", "device_id": device_id})
+    return JSONResponse(content={"status": "success", "device_id": device_id, "is_verified": True})
 
 @app.get("/api/alerts")
 async def get_alerts(db: Session = Depends(get_db)):
@@ -185,7 +257,8 @@ async def get_alerts(db: Session = Depends(get_db)):
             "name": profile.name if profile else "Unknown User",
             "blood_group": profile.blood_group if profile else "N/A",
             "medical_conditions": profile.medical_conditions if profile else "None",
-            "emergency_contact": profile.emergency_contact if profile else "N/A"
+            "emergency_contact": profile.emergency_contact if profile else "N/A",
+            "is_verified": profile.is_verified if profile else False
         })
     return results
 

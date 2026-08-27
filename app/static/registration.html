@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Node Registration</title>
+  <title>RescueLink — Node Registration & Identity Verification</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
 
-  <!-- Navigation Header -->
   <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex items-center space-x-3">
       <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
@@ -21,26 +20,17 @@
     </div>
   </nav>
 
-  <!-- Container -->
   <div class="flex-1 flex justify-center items-center p-6">
     <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
       
-      <div class="border-b border-slate-700 pb-4 mb-4 flex justify-between items-end">
-        <div>
-          <h2 class="text-xl font-bold text-slate-100 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Register Hardware Node Profile
-          </h2>
-          <p class="text-xs text-slate-400 mt-1">Bind dynamic ESP32 telemetry hardware IDs to live user medical emergency profiles.</p>
-        </div>
-      </div>
-
-      <!-- Quick Option for Existing Connection -->
-      <div class="bg-slate-900/60 border border-slate-700/80 rounded-lg p-3 mb-6 flex justify-between items-center text-xs">
-        <span class="text-slate-400">Already registered a hardware node?</span>
-        <a href="/profile" class="text-red-400 hover:text-red-300 font-semibold underline">Access Existing Profile →</a>
+      <div class="border-b border-slate-700 pb-4 mb-4">
+        <h2 class="text-xl font-bold text-slate-100 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+          Identity Verified Hardware Registration
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Bind ESP32 telemetry hardware to a verified citizen identity to prevent system misuse.</p>
       </div>
 
       <form id="regForm" class="space-y-4 text-sm">
@@ -52,7 +42,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2">
-            <label class="block text-slate-300 font-semibold mb-1">User Full Name <span class="text-red-500">*</span></label>
+            <label class="block text-slate-300 font-semibold mb-1">Full Name (As per Govt ID) <span class="text-red-500">*</span></label>
             <input type="text" id="name" name="name" placeholder="Full Name" required 
               class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
           </div>
@@ -60,6 +50,27 @@
             <label class="block text-slate-300 font-semibold mb-1">Age <span class="text-red-500">*</span></label>
             <input type="number" id="age" name="age" placeholder="Age" required 
               class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+          </div>
+        </div>
+
+        <!-- Government Identity Verification Block -->
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
+          <span class="text-xs font-bold text-red-400 uppercase tracking-wide block">🔒 Government Verification</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 font-semibold text-xs mb-1">ID Document Type</label>
+              <select id="govt_id_type" required class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 text-xs">
+                <option value="Aadhaar">Aadhaar Card (12 Digits)</option>
+                <option value="PAN">PAN Card</option>
+                <option value="Passport">Passport</option>
+                <option value="Driver License">Driver's License</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold text-xs mb-1">ID Number <span class="text-red-500">*</span></label>
+              <input type="text" id="govt_id_number" placeholder="Enter ID Number" required 
+                class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 text-xs focus:border-red-500 focus:outline-none">
+            </div>
           </div>
         </div>
 
@@ -89,12 +100,12 @@
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Medical Conditions / Allergies</label>
           <textarea id="medical_conditions" name="medical_conditions" placeholder="e.g. Asthma, Penicillin allergy..." 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-24 resize-none"></textarea>
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-20 resize-none"></textarea>
         </div>
 
         <button type="submit" id="submitBtn"
-          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-4 flex items-center justify-center space-x-2">
-          <span id="btnText">Save & Link Hardware Profile</span>
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-2 flex items-center justify-center space-x-2">
+          <span id="btnText">Verify Identity & Register Node</span>
         </button>
       </form>
     </div>
@@ -105,17 +116,17 @@
       e.preventDefault();
       
       const btnText = document.getElementById("btnText");
-      btnText.textContent = "Linking Hardware Profile...";
+      btnText.textContent = "Verifying Identity with Backend...";
 
       const params = new URLSearchParams();
       params.append("device_id", document.getElementById("device_id").value.trim());
-      params.append("victim_name", document.getElementById("name").value.trim());
       params.append("name", document.getElementById("name").value.trim());
       params.append("age", document.getElementById("age").value);
       params.append("blood_group", document.getElementById("blood_group").value);
       params.append("emergency_contact", document.getElementById("emergency_contact").value.trim());
-      params.append("critical_allergies", document.getElementById("medical_conditions").value.trim());
       params.append("medical_conditions", document.getElementById("medical_conditions").value.trim());
+      params.append("govt_id_type", document.getElementById("govt_id_type").value);
+      params.append("govt_id_number", document.getElementById("govt_id_number").value.trim());
 
       try {
         const res = await fetch("/api/register", {
@@ -128,13 +139,13 @@
           window.location.replace("/dashboard");
         } else {
           const errData = await res.json().catch(() => ({}));
-          alert("Error registering node: " + (errData.detail || "Invalid input"));
-          btnText.textContent = "Save & Link Hardware Profile";
+          alert("Verification Failed: " + (errData.detail || "Invalid Government ID payload"));
+          btnText.textContent = "Verify Identity & Register Node";
         }
       } catch (err) {
         console.error("Registration error:", err);
-        alert("Failed to communicate with backend server.");
-        btnText.textContent = "Save & Link Hardware Profile";
+        alert("Server communication error.");
+        btnText.textContent = "Verify Identity & Register Node";
       }
     });
   </script>
