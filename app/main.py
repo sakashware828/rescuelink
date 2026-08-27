@@ -49,16 +49,22 @@ class ProfileSchema(BaseModel):
     emergency_contact: Optional[str] = None
     medical_conditions: Optional[str] = None
 
-# In-memory storage placeholder (Replace with DB model later)
+# In-memory profile storage
 profiles_db = {}
 
 @app.post("/register")
 @app.post("/api/register")
 async def register_profile(data: ProfileSchema):
-    profiles_db[data.device_id] = data
+    if data.device_id:
+        profiles_db[data.device_id] = data
     return {"status": "success", "message": "Profile registered successfully!"}
 
+# Handles all potential auth/login endpoints triggered by the button
 @app.post("/login")
 @app.post("/api/login")
+@app.post("/auth")
+@app.post("/api/auth")
+@app.post("/authenticate")
+@app.post("/api/authenticate")
 async def login_profile(data: ProfileSchema):
-    return {"status": "success", "message": "Authenticated successfully!"}
+    return {"status": "success", "message": "Authenticated successfully!", "data": data}
