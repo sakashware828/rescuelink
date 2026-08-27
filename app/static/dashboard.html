@@ -3,95 +3,188 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Node Registration</title>
+  <title>RescueLink — Responder Dashboard</title>
   
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
+
+  <!-- TASK 3: Responder Login Modal Gate -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-950/90 z-[9999] flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+      <div class="flex items-center space-x-3 mb-4 border-b border-slate-700 pb-3">
+        <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm">RL</div>
+        <h2 class="text-lg font-bold text-white">Responder Authentication</h2>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Authorized emergency personnel access only.</p>
+      
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Username</label>
+          <input type="text" id="username" value="admin" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:outline-none focus:border-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+          <input type="password" id="password" value="rescue123" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:outline-none focus:border-red-500">
+        </div>
+        <div id="loginError" class="text-red-500 text-xs hidden">Invalid responder credentials.</div>
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded text-sm transition">Authenticate</button>
+      </form>
+    </div>
+  </div>
 
   <!-- Navigation Header -->
   <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex items-center space-x-3">
       <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
-      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Registration</span></span>
+      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Dashboard</span></span>
     </div>
     <div class="flex space-x-4 text-sm font-semibold">
-      <a href="/dashboard" class="text-slate-400 hover:text-white transition">Dashboard</a>
-      <a href="/registration" class="text-red-400 border-b-2 border-red-500 pb-0.5">Registration</a>
+      <a href="/dashboard" class="text-red-400 border-b-2 border-red-500 pb-0.5">Dashboard</a>
+      <a href="/registration" class="text-slate-400 hover:text-white transition">Registration</a>
       <a href="/profile" class="text-slate-400 hover:text-white transition">Profile</a>
+      <button onclick="logout()" class="text-xs text-slate-400 hover:text-red-400 border border-slate-700 rounded px-2 py-0.5">Logout</button>
     </div>
   </nav>
 
-  <!-- Main Registration Form Container -->
-  <div class="flex-1 flex justify-center items-center p-6">
-    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
-      
-      <div class="border-b border-slate-700 pb-4 mb-6">
-        <h2 class="text-xl font-bold text-slate-100 flex items-center">
-          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Register Hardware Node
-        </h2>
-        <p class="text-xs text-slate-400 mt-1">Link an incoming ESP32 / LoRa / GSM device ID to a user profile for real-time telemetry resolution.</p>
+  <!-- Main Grid Dashboard Content -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+    
+    <!-- Feed Panel -->
+    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 flex flex-col h-[calc(100vh-100px)]">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-3">
+        <h3 class="font-bold text-slate-200 text-sm tracking-wide">Emergency Alerts</h3>
+        <span id="alertCount" class="bg-red-600/20 text-red-400 text-xs px-2 py-0.5 rounded-full font-bold">0 Active</span>
       </div>
 
-      <form action="/api/register" method="POST" class="space-y-4 text-sm">
-        
-        <!-- Hardware Device ID -->
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
-          <input type="text" name="device_id" placeholder="e.g. ESP32-NODE-01 or NODE-884" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
-        </div>
+      <div id="alertsFeed" class="flex-1 overflow-y-auto space-y-3 pr-1">
+        <!-- Live Alerts Injected Here -->
+      </div>
+    </div>
 
-        <!-- Victim / User Full Name -->
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">User / Victim Full Name <span class="text-red-500">*</span></label>
-          <input type="text" name="victim_name" placeholder="John Doe" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
-        </div>
-
-        <!-- Grid for Blood Group & Emergency Contact -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Blood Group <span class="text-red-500">*</span></label>
-            <select name="blood_group" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Emergency Contact <span class="text-red-500">*</span></label>
-            <input type="tel" name="emergency_contact" placeholder="+91 9876543210" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
-          </div>
-        </div>
-
-        <!-- Critical Allergies & Medical Notes -->
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">Critical Allergies / Medical Notes</label>
-          <textarea name="critical_allergies" placeholder="e.g. Penicillin allergy, Diabetic, Asthma..." 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition h-24 resize-none"></textarea>
-        </div>
-
-        <!-- Submit Button -->
-        <button type="submit" 
-          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-4 flex items-center justify-center space-x-2">
-          <span>Save & Link Node Profile</span>
-        </button>
-      </form>
+    <!-- Map View -->
+    <div class="lg:col-span-2 bg-slate-800/90 border border-slate-700 rounded-xl overflow-hidden h-[calc(100vh-100px)] relative">
+      <div id="map" class="w-full h-full"></div>
     </div>
   </div>
 
+  <script>
+    // TASK 3: Authentication Gate Logic
+    function checkAuth() {
+      if (sessionStorage.getItem("authenticated") === "true") {
+        document.getElementById("loginModal").classList.add("hidden");
+      }
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("password").value;
+      
+      if (u === "admin" && p === "rescue123") {
+        sessionStorage.setItem("authenticated", "true");
+        document.getElementById("loginModal").classList.add("hidden");
+      } else {
+        document.getElementById("loginError").classList.remove("hidden");
+      }
+    });
+
+    function logout() {
+      sessionStorage.removeItem("authenticated");
+      location.reload();
+    }
+
+    checkAuth();
+
+    // Leaflet Map Initialization
+    const map = L.map('map').setView([19.0760, 72.8777], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let alertsStore = [];
+    const markers = {};
+
+    // TASK 2: Priority Sorting Function
+    function sortAlerts(alerts) {
+      return alerts.sort((a, b) => {
+        // Priority 1: Manual triggers first
+        if (a.trigger_type === 'manual' && b.trigger_type !== 'manual') return -1;
+        if (a.trigger_type !== 'manual' && b.trigger_type === 'manual') return 1;
+
+        // Priority 2: Newest timestamp first
+        const timeA = new Date(a.received_at || Date.now()).getTime();
+        const timeB = new Date(b.received_at || Date.now()).getTime();
+        return timeB - timeA;
+      });
+    }
+
+    function renderFeed() {
+      const feed = document.getElementById("alertsFeed");
+      feed.innerHTML = "";
+      
+      const sorted = sortAlerts([...alertsStore]);
+      document.getElementById("alertCount").textContent = `${sorted.length} Active`;
+
+      sorted.forEach(alert => {
+        const isManual = alert.trigger_type === 'manual';
+        const card = document.createElement("div");
+        card.className = `p-3 rounded-lg border transition cursor-pointer ${
+          isManual 
+            ? 'bg-red-950/40 border-red-600/60 hover:border-red-500' 
+            : 'bg-amber-950/30 border-amber-600/40 hover:border-amber-500'
+        }`;
+
+        card.onclick = () => {
+          map.setView([parseFloat(alert.latitude), parseFloat(alert.longitude)], 15);
+        };
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <span class="font-bold text-sm ${isManual ? 'text-red-400' : 'text-amber-400'}">
+              ${isManual ? '🚨 MANUAL SOS' : '⚠️ AUTOMATIC FALL'}
+            </span>
+            <span class="text-[10px] text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded">${alert.device_id}</span>
+          </div>
+          <div class="text-xs text-slate-200 font-semibold">${alert.victim_name || 'Aarav Sharma'}</div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            Blood: <span class="text-slate-200">${alert.blood_group || 'O+'}</span> | Contact: ${alert.emergency_contact || '+91 98765 43210'}
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1">
+            Coords: ${alert.latitude}, ${alert.longitude}
+          </div>
+        `;
+
+        feed.appendChild(card);
+
+        // Map Marker
+        if (!markers[alert.device_id]) {
+          const marker = L.marker([parseFloat(alert.latitude), parseFloat(alert.longitude)])
+            .addTo(map)
+            .bindPopup(`<b>${alert.device_id}</b><br>${isManual ? 'Manual SOS' : 'Auto Fall Detected'}`);
+          markers[alert.device_id] = marker;
+        }
+      });
+    }
+
+    // WebSocket Stream
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/alerts`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      alertsStore.unshift(data);
+      renderFeed();
+    };
+
+    // Initial Fetch Setup (Fallback Demo Data)
+    alertsStore = [
+      { device_id: "ESP32_NODE_1", trigger_type: "manual", latitude: "19.0438", longitude: "72.8806", victim_name: "Aarav Sharma", blood_group: "O+", emergency_contact: "+91 98765 43210", received_at: new Date().toISOString() },
+      { device_id: "ESP32_NODE_3", trigger_type: "auto_fall", latitude: "19.1176", longitude: "72.9060", victim_name: "Rohan Mehta", blood_group: "A+", emergency_contact: "+91 99300 44556", received_at: new Date(Date.now() - 600000).toISOString() }
+    ];
+    renderFeed();
+  </script>
 </body>
 </html>

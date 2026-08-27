@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RescueLink — Node Registration</title>
-  
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
@@ -37,28 +35,25 @@
         <p class="text-xs text-slate-400 mt-1">Link an incoming ESP32 / LoRa / GSM device ID to a user profile for real-time telemetry resolution.</p>
       </div>
 
-      <form action="/api/register" method="POST" class="space-y-4 text-sm">
+      <form id="regForm" class="space-y-4 text-sm">
         
-        <!-- Hardware Device ID -->
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
-          <input type="text" name="device_id" value="ESP32_NODE_1" placeholder="e.g. ESP32_NODE_1 or NODE-884" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+          <input type="text" id="device_id" name="device_id" value="ESP32_NODE_1" placeholder="e.g. ESP32_NODE_1" required 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
         </div>
 
-        <!-- Victim / User Full Name -->
         <div>
           <label class="block text-slate-300 font-semibold mb-1">User / Victim Full Name <span class="text-red-500">*</span></label>
-          <input type="text" name="victim_name" placeholder="John Doe" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+          <input type="text" id="victim_name" name="victim_name" placeholder="John Doe" required 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
         </div>
 
-        <!-- Grid for Blood Group & Emergency Contact -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Blood Group <span class="text-red-500">*</span></label>
-            <select name="blood_group" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+            <select id="blood_group" name="blood_group" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 transition">
               <option value="A+">A+</option>
               <option value="A-">A-</option>
               <option value="B+">B+</option>
@@ -72,26 +67,53 @@
 
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Emergency Contact <span class="text-red-500">*</span></label>
-            <input type="tel" name="emergency_contact" placeholder="+91 9876543210" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+            <input type="tel" id="emergency_contact" name="emergency_contact" placeholder="+91 9876543210" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
           </div>
         </div>
 
-        <!-- Critical Allergies & Medical Notes -->
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Critical Allergies / Medical Notes</label>
-          <textarea name="critical_allergies" placeholder="e.g. Penicillin allergy, Diabetic, Asthma..." 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition h-24 resize-none"></textarea>
+          <textarea id="critical_allergies" name="critical_allergies" placeholder="e.g. Penicillin allergy, Diabetic, Asthma..." 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-24 resize-none"></textarea>
         </div>
 
-        <!-- Submit Button -->
-        <button type="submit" 
+        <button type="submit" id="submitBtn"
           class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-4 flex items-center justify-center space-x-2">
-          <span>Save & Link Node Profile</span>
+          <span id="btnText">Save & Link Node Profile</span>
         </button>
       </form>
     </div>
   </div>
 
+  <script>
+    document.getElementById("regForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const btnText = document.getElementById("btnText");
+      btnText.textContent = "Saving Profile...";
+
+      const formData = new FormData(e.target);
+
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          body: formData
+        });
+
+        if (res.ok) {
+          // Explicit redirect to Dashboard
+          window.location.replace("/dashboard");
+        } else {
+          alert("Error saving profile. Please try again.");
+          btnText.textContent = "Save & Link Node Profile";
+        }
+      } catch (err) {
+        console.error("Failed to register:", err);
+        alert("Server communication error.");
+        btnText.textContent = "Save & Link Node Profile";
+      }
+    });
+  </script>
 </body>
 </html>
