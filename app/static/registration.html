@@ -93,37 +93,42 @@
     </div>
   </div>
 
-  <script>
+<script>
     document.getElementById("regForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       
       const btnText = document.getElementById("btnText");
       btnText.textContent = "Linking Hardware Profile...";
 
-      // Build JSON payload matching the Profile database model fields
-      const payload = {
-        device_id: document.getElementById("device_id").value.trim(),
-        name: document.getElementById("name").value.trim(),
-        age: parseInt(document.getElementById("age").value, 10),
-        blood_group: document.getElementById("blood_group").value,
-        emergency_contact: document.getElementById("emergency_contact").value.trim(),
-        medical_conditions: document.getElementById("medical_conditions").value.trim()
-      };
+      // Send standard URL-encoded form data matching FastAPI Form(...) inputs
+      const params = new URLSearchParams();
+      params.append("device_id", document.getElementById("device_id").value.trim());
+      params.append("victim_name", document.getElementById("name").value.trim());
+      params.append("name", document.getElementById("name").value.trim());
+      params.append("age", document.getElementById("age").value);
+      params.append("blood_group", document.getElementById("blood_group").value);
+      params.append("emergency_contact", document.getElementById("emergency_contact").value.trim());
+      params.append("critical_allergies", document.getElementById("medical_conditions").value.trim());
+      params.append("medical_conditions", document.getElementById("medical_conditions").value.trim());
 
       try {
         const res = await fetch("/api/register", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/x-www-form-urlencoded"
           },
-          body: JSON.stringify(payload)
+          body: params
         });
 
         if (res.ok) {
           window.location.replace("/dashboard");
         } else {
           const errData = await res.json().catch(() => ({}));
-          alert("Error registering hardware node: " + (errData.detail || "Invalid input format"));
+          const detailMsg = Array.isArray(errData.detail) 
+            ? errData.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n')
+            : (errData.detail || "Invalid input format");
+
+          alert("Error registering node:\n" + detailMsg);
           btnText.textContent = "Save & Link Hardware Profile";
         }
       } catch (err) {
