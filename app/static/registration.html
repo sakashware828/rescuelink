@@ -3,331 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Profile Registration</title>
-  <style>
-    :root {
-      --primary: #dc2626;
-      --primary-hover: #b91c1c;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #cbd5e1;
-      --error: #ef4444;
-      --success: #16a34a;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding-bottom: 24px;
-    }
-
-    /* Navigation Header */
-    .nav-bar {
-      width: 100%;
-      background: #ffffff;
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 32px;
-    }
-
-    .nav-brand {
-      font-weight: 700;
-      color: var(--primary);
-      text-transform: uppercase;
-      font-size: 14px;
-      letter-spacing: 1.2px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 16px;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 600;
-      transition: color 0.2s ease;
-    }
-
-    .nav-links a:hover, .nav-links a.active {
-      color: var(--primary);
-    }
-
-    .container {
-      background: var(--card-bg);
-      width: 100%;
-      max-width: 480px;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-      border: 1px solid #e2e8f0;
-    }
-
-    .header {
-      margin-bottom: 24px;
-    }
-
-    h2 {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #334155;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: inherit;
-      transition: all 0.2s ease;
-      background-color: #fff;
-    }
-
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
-    }
-
-    input.invalid, textarea.invalid {
-      border-color: var(--error);
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-    }
-
-    .error-msg {
-      font-size: 12px;
-      color: var(--error);
-      margin-top: 4px;
-      display: none;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: var(--primary);
-      color: white;
-      font-weight: 600;
-      font-size: 15px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    button:hover { background-color: var(--primary-hover); }
-
-    button:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 0.8s linear infinite;
-      display: none;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
+  <title>RescueLink — Node Registration</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
 
-  <!-- Top Navigation Header -->
-  <nav class="nav-bar">
-    <span class="nav-brand">RescueLink System</span>
-    <div class="nav-links">
-      <a href="/dashboard">Dashboard</a>
-      <a href="/registration" class="active">Registration</a>
-      <a href="/profile">Profile</a>
+  <!-- Navigation Header -->
+  <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
+      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Registration</span></span>
+    </div>
+    <div class="flex space-x-4 text-sm font-semibold">
+      <a href="/dashboard" class="text-slate-400 hover:text-white transition">Dashboard</a>
+      <a href="/registration" class="text-red-400 border-b-2 border-red-500 pb-0.5">Registration</a>
+      <a href="/profile" class="text-slate-400 hover:text-white transition">Profile</a>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="header">
-      <h2>Register Profile</h2>
+  <!-- Main Registration Form Container -->
+  <div class="flex-1 flex justify-center items-center p-6">
+    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
+      
+      <div class="border-b border-slate-700 pb-4 mb-6">
+        <h2 class="text-xl font-bold text-slate-100 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Register Hardware Node
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Link an incoming ESP32 / LoRa / GSM device ID to a user profile for real-time telemetry resolution.</p>
+      </div>
+
+      <form action="/api/register" method="POST" class="space-y-4 text-sm">
+        
+        <!-- Hardware Device ID -->
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
+          <input type="text" name="device_id" value="ESP32_NODE_1" placeholder="e.g. ESP32_NODE_1 or NODE-884" required 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+        </div>
+
+        <!-- Victim / User Full Name -->
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">User / Victim Full Name <span class="text-red-500">*</span></label>
+          <input type="text" name="victim_name" placeholder="John Doe" required 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+        </div>
+
+        <!-- Grid for Blood Group & Emergency Contact -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Blood Group <span class="text-red-500">*</span></label>
+            <select name="blood_group" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Emergency Contact <span class="text-red-500">*</span></label>
+            <input type="tel" name="emergency_contact" placeholder="+91 9876543210" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition">
+          </div>
+        </div>
+
+        <!-- Critical Allergies & Medical Notes -->
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Critical Allergies / Medical Notes</label>
+          <textarea name="critical_allergies" placeholder="e.g. Penicillin allergy, Diabetic, Asthma..." 
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition h-24 resize-none"></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" 
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-4 flex items-center justify-center space-x-2">
+          <span>Save & Link Node Profile</span>
+        </button>
+      </form>
     </div>
-
-    <form id="regForm" novalidate>
-      <div class="form-group">
-        <label for="device_id">Device ID</label>
-        <input type="text" id="device_id" value="ESP32_NODE_1" placeholder="e.g. ESP32_NODE_1">
-        <div class="error-msg" id="err-device_id">Device ID is required.</div>
-      </div>
-
-      <div class="form-group">
-        <label for="name">Full Name</label>
-        <input type="text" id="name" placeholder="John Doe">
-        <div class="error-msg" id="err-name">Please enter a valid name (letters and spaces only).</div>
-      </div>
-
-      <div class="form-group">
-        <label for="age">Age</label>
-        <input type="number" id="age" placeholder="e.g. 21">
-        <div class="error-msg" id="err-age">Please enter a valid positive age.</div>
-      </div>
-
-      <div class="form-group">
-        <label for="blood_group">Blood Group</label>
-        <input type="text" id="blood_group" placeholder="e.g. O+">
-      </div>
-
-      <div class="form-group">
-        <label for="medical_conditions">Critical Allergies / Medical Conditions</label>
-        <textarea id="medical_conditions" rows="2" placeholder="e.g. Penicillin allergy, Asthma"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label for="emergency_contact">Emergency Contact Number</label>
-        <input type="tel" id="emergency_contact" placeholder="e.g. +91 98765 43210">
-        <div class="error-msg" id="err-emergency_contact">Enter a valid contact number (min. 10 digits).</div>
-      </div>
-
-      <button type="submit" id="submitBtn">
-        <span class="spinner" id="btnSpinner"></span>
-        <span id="btnText">Save Profile</span>
-      </button>
-    </form>
   </div>
 
-  <script>
-    const form = document.getElementById("regForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const btnSpinner = document.getElementById("btnSpinner");
-    const btnText = document.getElementById("btnText");
-
-    // Clear inline errors on input
-    ['device_id', 'name', 'age', 'emergency_contact'].forEach(id => {
-      document.getElementById(id).addEventListener('input', () => {
-        document.getElementById(id).classList.remove('invalid');
-        document.getElementById(`err-${id}`).style.display = 'none';
-      });
-    });
-
-    function validateForm() {
-      let isValid = true;
-      const deviceId = document.getElementById("device_id");
-      const name = document.getElementById("name");
-      const age = document.getElementById("age");
-      const phone = document.getElementById("emergency_contact");
-
-      if (!deviceId.value.trim()) {
-        showError(deviceId, "err-device_id");
-        isValid = false;
-      }
-
-      const nameRegex = /^[A-Za-z\s'-]+$/;
-      if (!name.value.trim() || !nameRegex.test(name.value.trim())) {
-        showError(name, "err-name");
-        isValid = false;
-      }
-
-      const ageVal = parseInt(age.value);
-      if (isNaN(ageVal) || ageVal <= 0 || ageVal > 120) {
-        showError(age, "err-age");
-        isValid = false;
-      }
-
-      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
-      if (!phone.value.trim() || !phoneRegex.test(phone.value.trim().replace(/\s+/g, ''))) {
-        showError(phone, "err-emergency_contact");
-        isValid = false;
-      }
-
-      return isValid;
-    }
-
-    function showError(inputEl, errorId) {
-      inputEl.classList.add("invalid");
-      document.getElementById(errorId).style.display = "block";
-    }
-
-    function setLoading(loading) {
-      if (loading) {
-        submitBtn.disabled = true;
-        btnSpinner.style.display = "inline-block";
-        btnText.textContent = "Saving Profile...";
-      } else {
-        submitBtn.disabled = false;
-        btnSpinner.style.display = "none";
-        btnText.textContent = "Save Profile";
-      }
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      if (!validateForm()) return;
-      setLoading(true);
-
-      const payload = {
-        device_id: document.getElementById("device_id").value.trim(),
-        full_name: document.getElementById("name").value.trim(),
-        blood_group: document.getElementById("blood_group").value.trim() || "Not specified",
-        allergies: document.getElementById("medical_conditions").value.trim() || "None reported"
-      };
-
-      try {
-        const res = await fetch('/api/v1/register', {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-        if (data.status === "SUCCESS") {
-          localStorage.setItem("userProfile", JSON.stringify({
-            ...payload,
-            age: parseInt(document.getElementById("age").value),
-            emergency_contact: document.getElementById("emergency_contact").value.trim()
-          }));
-          window.location.href = "/profile";
-        } else {
-          alert("Error saving profile: " + data.message);
-        }
-      } catch (err) {
-        console.error("Backend request failed:", err);
-        alert("Failed to reach server. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    });
-  </script>
 </body>
 </html>
