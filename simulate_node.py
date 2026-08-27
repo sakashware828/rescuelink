@@ -1,43 +1,41 @@
-import json
-import time
-import paho.mqtt.client as mqtt
+"""
+RescueLink — Simulated Device (HTTP version)
+------------------------------------------------
+Replaces the MQTT-based simulate_node.py, which required a Mosquitto broker
+that isn't actually deployed anywhere in this project. This version posts
+straight to your running FastAPI backend over HTTP instead — no Docker,
+no broker, one less thing to break during your demo today.
 
-MQTT_HOST = "mosquitto"
-MQTT_PORT = 1883
-MQTT_TOPIC = "rescuelink/alerts"
+Install: pip install requests --break-system-packages
+Run (with your backend already running locally): python simulate_node.py
+"""
+
+import requests
+import time
+
+API_URL = "http://localhost:8000/api/alerts"  # change if testing against Render
 
 route_coordinates = [
     (19.0760, 72.8777),
     (19.0745, 72.8730),
     (19.0730, 72.8680),
     (19.0710, 72.8620),
-    (19.0680, 72.8550),
-    (19.0640, 72.8470),
-    (19.0600, 72.8400),
 ]
 
-client = mqtt.Client()
+device_id = "ESP32_NODE_SIM"  # must match a device_id you registered via /api/register
 
-try:
-    client.connect(MQTT_HOST, MQTT_PORT, 60)
-    print("Connected to Mosquitto Broker! Starting live telemetry stream...")
+for i, (lat, lng) in enumerate(route_coordinates):
+    payload = {
+        "device_id": device_id,
+        "trigger_type": "auto_fall" if i >= 2 else "manual",
+        "latitude": lat,
+        "longitude": lng,
+    }
+    try:
+        res = requests.post(API_URL, json=payload, timeout=5)
+        print(f"[{i+1}/{len(route_coordinates)}] Sent alert at {lat},{lng} — status {res.status_code}")
+    except Exception as e:
+        print(f"Failed to send alert: {e}")
+    time.sleep(2)
 
-    for i, (lat, lng) in enumerate(route_coordinates):
-        payload = {
-            "device_id": "ESP32_NODE_SIM",
-            "latitude": lat,
-            "longitude": lng,
-            "sos_triggered": True,
-            "fall_detected": (i >= 3),
-            "victim_name": "Alex Mercer",
-            "blood_group": "B+",
-            "critical_allergies": "Penicillin",
-        }
-        client.publish(MQTT_TOPIC, json.dumps(payload))
-        print(f"[{i+1}/{len(route_coordinates)}] Pinging location: {lat}, {lng}")
-        time.sleep(2)
-
-    print("Stream complete!")
-
-except Exception as e:
-    print(f"Error connecting to MQTT Broker: {e}")
+print("Simulation complete.")

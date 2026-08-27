@@ -19,7 +19,10 @@
       <a href="/" class="text-decoration-none text-white fw-bold"><span class="badge bg-danger">RL</span> RESCUELINK</a>
       <span class="text-secondary small ms-2">Responder Operations Dashboard</span>
     </div>
-    <a href="/profile" class="btn btn-outline-light btn-sm">Switch to Device Linker</a>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge bg-secondary" id="wsStatus">Disconnected</span>
+      <a href="/profile" class="btn btn-outline-light btn-sm">Switch to Device Linker</a>
+    </div>
   </nav>
 
   <div class="d-flex">
@@ -37,40 +40,81 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // Initialize Map with Mumbai default coordinates
     const map = L.map('map').setView([19.0760, 72.8777], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+      attribution: '&copy; OpenStreetMap' 
+    }).addTo(map);
+
+    // Fix map render sizing bugs on window resize/load
+    setTimeout(() => { map.invalidateSize(); }, 300);
 
     let activeAlerts = 0;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/alerts`);
+    let ws;
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const emptyState = document.getElementById('emptyState');
-      if (emptyState) emptyState.remove();
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
+      const statusBadge = document.getElementById('wsStatus');
 
-      activeAlerts++;
-      document.getElementById('activeCount').innerText = `${activeAlerts} Active`;
+      ws = new WebSocket(wsUrl);
 
-      const card = document.createElement('div');
-      card.className = 'alert-card p-3';
-      card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <span class="badge bg-danger">${data.trigger_type}</span>
-          <small class="text-secondary">Node: ${data.device_id}</small>
-        </div>
-        <h6 class="fw-bold mb-1">${data.name} (${data.age} yrs)</h6>
-        <p class="small text-secondary mb-1"><strong>Blood:</strong> ${data.blood_group} | <strong>Contact:</strong> ${data.emergency_contact}</p>
-        <p class="small text-warning mb-0"><strong>Medical Note:</strong> ${data.medical_conditions}</p>
-      `;
-      document.getElementById('feedList').prepend(card);
+      ws.onopen = () => {
+        statusBadge.className = 'badge bg-success';
+        statusBadge.innerText = 'Live Feed Connected';
+      };
 
-      const lat = parseFloat(data.latitude);
-      const lng = parseFloat(data.longitude);
-      const marker = L.marker([lat, lng]).addTo(map);
-      marker.bindPopup(`<b>${data.name}</b><br>Trigger: ${data.trigger_type}`).openPopup();
-      map.panTo([lat, lng]);
-    };
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const emptyState = document.getElementById('emptyState');
+          if (emptyState) emptyState.remove();
+
+          activeAlerts++;
+          document.getElementById('activeCount').innerText = `${activeAlerts} Active`;
+
+          // Construct Feed Card
+          const card = document.createElement('div');
+          card.className = 'alert-card p-3';
+          card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge bg-danger">${data.trigger_type || 'EMERGENCY'}</span>
+              <small class="text-secondary">Node: ${data.device_id || 'N/A'}</small>
+            </div>
+            <h6 class="fw-bold mb-1">${data.name || 'Unknown Subject'} (${data.age || 'N/A'} yrs)</h6>
+            <p class="small text-secondary mb-1"><strong>Blood:</strong> ${data.blood_group || 'N/A'} | <strong>Contact:</strong> ${data.emergency_contact || 'N/A'}</p>
+            <p class="small text-warning mb-0"><strong>Medical Note:</strong> ${data.medical_conditions || 'None'}</p>
+          `;
+          document.getElementById('feedList').prepend(card);
+
+          // Update Map Marker & Center
+          const lat = parseFloat(data.latitude);
+          const lng = parseFloat(data.longitude);
+          
+          if (!isNaN(lat) && !isNaN(lng)) {
+            const marker = L.marker([lat, lng]).addTo(map);
+            marker.bindPopup(`<b>${data.name || 'Unknown'}</b><br>Trigger: ${data.trigger_type || 'Alert'}`).openPopup();
+            map.setView([lat, lng], 14);
+          }
+        } catch (err) {
+          console.error("Failed to parse incoming WS message:", err);
+        }
+      };
+
+      ws.onclose = () => {
+        statusBadge.className = 'badge bg-danger';
+        statusBadge.innerText = 'Disconnected - Retrying...';
+        // Auto-reconnect every 3 seconds if connection drops
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    }
+
+    // Start WebSocket Connection
+    connectWebSocket();
   </script>
 </body>
 </html>

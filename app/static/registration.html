@@ -148,11 +148,11 @@
         <!-- Device Auth Card -->
         <div class="card">
             <h2>Device Authentication</h2>
-            <form id="authForm">
+            <form id="authForm" onsubmit="handleAuth(event)">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Device ID <span class="required-asterisk">*</span></label>
-                        <input type="text" placeholder="001" required>
+                        <input type="text" id="authDeviceId" placeholder="001" required>
                     </div>
                     <div class="form-group">
                         <label>Passcode <span class="required-asterisk">*</span></label>
@@ -206,23 +206,6 @@
                         <span id="phoneError" class="error-message">Phone number must contain exactly 10 digits (excluding country code).</span>
                     </div>
 
-                    <!-- Govt ID Section -->
-                    <div class="form-group">
-                        <label>Govt ID Type <span class="required-asterisk">*</span></label>
-                        <select id="govtIdType" onchange="updateIdPlaceholder()" required>
-                            <option value="">Select ID Type</option>
-                            <option value="Aadhaar">Aadhaar</option>
-                            <option value="PAN">PAN</option>
-                            <option value="Passport">Passport</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Govt ID Number <span class="required-asterisk">*</span></label>
-                        <input type="text" id="govtIdNumber" placeholder="Enter ID number" required>
-                        <span id="govtIdError" class="error-message">Invalid Government ID format.</span>
-                    </div>
-
                     <div class="form-group full-width">
                         <label>Medical Conditions / Allergies</label>
                         <textarea id="medicalConditions" rows="3" placeholder="None listed"></textarea>
@@ -241,25 +224,10 @@
             const input = document.getElementById(inputId);
             if (input.type === "password") {
                 input.type = "text";
-                btn.textContent = "🙈"; // Icon state when visible
+                btn.textContent = "🙈";
             } else {
                 input.type = "password";
-                btn.textContent = "👁️"; // Icon state when hidden
-            }
-        }
-
-        function updateIdPlaceholder() {
-            const idType = document.getElementById('govtIdType').value;
-            const idInput = document.getElementById('govtIdNumber');
-            
-            if (idType === "Aadhaar") {
-                idInput.placeholder = "Enter 12-digit Aadhaar number";
-            } else if (idType === "PAN") {
-                idInput.placeholder = "Enter 10-character PAN (e.g. ABCDE1234F)";
-            } else if (idType === "Passport") {
-                idInput.placeholder = "Enter 8-character Passport (e.g. A1234567)";
-            } else {
-                idInput.placeholder = "Enter ID number";
+                btn.textContent = "👁️";
             }
         }
 
@@ -272,39 +240,50 @@
             return coreDigits.length === 10;
         }
 
-        function validateGovtID(idType, idNumber) {
-            const cleanId = idNumber.trim().toUpperCase();
+        async function handleAuth(event) {
+            event.preventDefault();
+            const device_id = document.getElementById('authDeviceId').value.trim();
+            const passcode = document.getElementById('authPasscode').value;
 
-            if (idType === "Aadhaar") {
-                // Aadhaar: Exactly 12 digits (ignoring optional spaces/hyphens)
-                const digitsOnly = cleanId.replace(/\D/g, '');
-                return digitsOnly.length === 12 && cleanId.replace(/[\s-]/g, '').length === 12;
-            } else if (idType === "PAN") {
-                // PAN Card: Standard 10 alphanumeric characters format (5 letters, 4 numbers, 1 letter)
-                const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-                return panRegex.test(cleanId);
-            } else if (idType === "Passport") {
-                // Passport: 8 characters total (1 letter followed by 7 numbers)
-                const passportRegex = /^[A-Z]{1}[0-9]{7}$/;
-                return passportRegex.test(cleanId);
+            try {
+                const response = await fetch('/api/lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id, passcode })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Autofill profile form fields
+                    document.getElementById('deviceId').value = device_id;
+                    document.getElementById('passcode').value = passcode;
+                    document.getElementById('fullName').value = data.name || '';
+                    document.getElementById('age').value = data.age || '';
+                    document.getElementById('bloodGroup').value = data.blood_group || '';
+                    document.getElementById('emergencyPhone').value = data.emergency_contact || '';
+                    document.getElementById('medicalConditions').value = data.medical_conditions || '';
+                    
+                    alert("Profile loaded successfully!");
+                } else {
+                    const err = await response.json();
+                    alert("Authentication failed: " + (err.detail || "Invalid credentials"));
+                }
+            } catch (error) {
+                alert("Error connecting to server.");
             }
-            return false;
         }
 
-        function handleSave(event) {
+        async function handleSave(event) {
             event.preventDefault();
 
             const form = document.getElementById('profileForm');
             const phoneInput = document.getElementById('emergencyPhone').value;
             const phoneError = document.getElementById('phoneError');
-            
-            const idType = document.getElementById('govtIdType').value;
-            const idNumber = document.getElementById('govtIdNumber').value;
-            const govtIdError = document.getElementById('govtIdError');
 
             let isValid = true;
 
-            // 1. Validate Phone Number
+            // Validate Phone Number
             if (!validatePhoneNumber(phoneInput)) {
                 phoneError.style.display = 'block';
                 isValid = false;
@@ -312,30 +291,39 @@
                 phoneError.style.display = 'none';
             }
 
-            // 2. Validate Government ID Format
-            if (!validateGovtID(idType, idNumber)) {
-                if (idType === "Aadhaar") {
-                    govtIdError.textContent = "Aadhaar number must contain exactly 12 digits.";
-                } else if (idType === "PAN") {
-                    govtIdError.textContent = "PAN must be 10 characters long (5 letters, 4 numbers, 1 letter).";
-                } else if (idType === "Passport") {
-                    govtIdError.textContent = "Passport must be 8 characters long (1 letter followed by 7 digits).";
-                } else {
-                    govtIdError.textContent = "Please select a valid Government ID Type.";
-                }
-                govtIdError.style.display = 'block';
-                isValid = false;
-            } else {
-                govtIdError.style.display = 'none';
-            }
-
-            // 3. Validate overall form completeness
+            // Validate overall form completeness
             if (!form.checkValidity() || !isValid) {
                 form.reportValidity();
                 return;
             }
 
-            alert("Hardware Profile details validated and saved successfully!");
+            // Construct payload matching backend specification
+            const payload = {
+                device_id: document.getElementById('deviceId').value.trim(),
+                passcode: document.getElementById('passcode').value,
+                name: document.getElementById('fullName').value.trim(),
+                age: parseInt(document.getElementById('age').value, 10),
+                blood_group: document.getElementById('bloodGroup').value.trim(),
+                emergency_contact: document.getElementById('emergencyPhone').value.trim(),
+                medical_conditions: document.getElementById('medicalConditions').value.trim() || "None listed"
+            };
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert("Hardware Profile registered successfully!");
+                } else {
+                    const err = await response.json();
+                    alert("Registration failed: " + (err.detail || "Unknown error"));
+                }
+            } catch (error) {
+                alert("Network error: Could not save profile.");
+            }
         }
     </script>
 </body>
