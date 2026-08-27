@@ -183,3 +183,15 @@ async def websocket_alerts(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@app.get("/profile", response_class=HTMLResponse)
+async def serve_profile_page():
+    # Serves registration UI or redirect to dynamic profile view
+    with open("app/static/registration.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@app.get("/api/profiles")
+async def get_all_profiles(db: Session = Depends(get_db)):
+    # API endpoint to fetch all registered node profiles
+    profiles = db.query(Profile).all()
+    return profiles
