@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
@@ -39,32 +39,68 @@ async def serve_registration():
     return render_html("registration.html")
 
 
-# --- DATA / API POST ENDPOINTS ---
+# --- DATA / API SCHEMAS ---
 class ProfileSchema(BaseModel):
-    device_id: Optional[str] = None
-    passcode: Optional[str] = None
+    device_id: str
+    passcode: str
+    name: Optional[str] = None
     full_name: Optional[str] = None
     age: Optional[int] = None
     blood_group: Optional[str] = None
     emergency_contact: Optional[str] = None
+    govt_id_type: Optional[str] = None
+    govt_id_number: Optional[str] = None
     medical_conditions: Optional[str] = None
 
-# In-memory profile storage
+class LookupSchema(BaseModel):
+    device_id: str
+    passcode: str
+
+# In-memory database storage
 profiles_db = {}
 
+
+# --- POST ENDPOINTS ---
 @app.post("/register")
 @app.post("/api/register")
 async def register_profile(data: ProfileSchema):
-    if data.device_id:
-        profiles_db[data.device_id] = data
-    return {"status": "success", "message": "Profile registered successfully!"}
+    # Standardize name field
+    profile_name = data.name or data.full_name or ""
+    
+    profiles_db[data.device_id] = {
+        "device_id": data.device_id,
+        "passcode": data.passcode,
+        "name": profile_name,
+        "age": data.age,
+        "blood_group": data.blood_group,
+        "emergency_contact": data.emergency_contact,
+        "govt_id_type": data.govt_id_type,
+        "govt_id_number": data.govt_id_number,
+        "medical_conditions": data.medical_conditions or "None listed"
+    }
+    return {"status": "success", "message": "Hardware Profile registered successfully!"}
 
-# Handles all potential auth/login endpoints triggered by the button
+
+@app.post("/api/lookup")
 @app.post("/login")
 @app.post("/api/login")
 @app.post("/auth")
 @app.post("/api/auth")
 @app.post("/authenticate")
 @app.post("/api/authenticate")
-async def login_profile(data: ProfileSchema):
-    return {"status": "success", "message": "Authenticated successfully!", "data": data}
+async def lookup_profile(data: LookupSchema):
+    device = profiles_db.get(data.device_id)
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Device ID not registered yet."
+        )
+        
+    if device["passcode"] != data.passcode:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid Passcode."
+        )
+        
+    return device
