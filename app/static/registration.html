@@ -21,22 +21,29 @@
     </div>
   </nav>
 
-  <!-- Main Registration Form Container -->
+  <!-- Container -->
   <div class="flex-1 flex justify-center items-center p-6">
     <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
       
-      <div class="border-b border-slate-700 pb-4 mb-6">
-        <h2 class="text-xl font-bold text-slate-100 flex items-center">
-          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Register Hardware Node Profile
-        </h2>
-        <p class="text-xs text-slate-400 mt-1">Bind dynamic ESP32 telemetry hardware IDs to live user medical emergency profiles.</p>
+      <div class="border-b border-slate-700 pb-4 mb-4 flex justify-between items-end">
+        <div>
+          <h2 class="text-xl font-bold text-slate-100 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Register Hardware Node Profile
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Bind dynamic ESP32 telemetry hardware IDs to live user medical emergency profiles.</p>
+        </div>
+      </div>
+
+      <!-- Quick Option for Existing Connection -->
+      <div class="bg-slate-900/60 border border-slate-700/80 rounded-lg p-3 mb-6 flex justify-between items-center text-xs">
+        <span class="text-slate-400">Already registered a hardware node?</span>
+        <a href="/profile" class="text-red-400 hover:text-red-300 font-semibold underline">Access Existing Profile →</a>
       </div>
 
       <form id="regForm" class="space-y-4 text-sm">
-        
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
           <input type="text" id="device_id" name="device_id" placeholder="e.g. ESP32_NODE_1" required 
@@ -93,14 +100,13 @@
     </div>
   </div>
 
-<script>
+  <script>
     document.getElementById("regForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       
       const btnText = document.getElementById("btnText");
       btnText.textContent = "Linking Hardware Profile...";
 
-      // Send standard URL-encoded form data matching FastAPI Form(...) inputs
       const params = new URLSearchParams();
       params.append("device_id", document.getElementById("device_id").value.trim());
       params.append("victim_name", document.getElementById("name").value.trim());
@@ -114,9 +120,7 @@
       try {
         const res = await fetch("/api/register", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: params
         });
 
@@ -124,11 +128,7 @@
           window.location.replace("/dashboard");
         } else {
           const errData = await res.json().catch(() => ({}));
-          const detailMsg = Array.isArray(errData.detail) 
-            ? errData.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join('\n')
-            : (errData.detail || "Invalid input format");
-
-          alert("Error registering node:\n" + detailMsg);
+          alert("Error registering node: " + (errData.detail || "Invalid input"));
           btnText.textContent = "Save & Link Hardware Profile";
         }
       } catch (err) {

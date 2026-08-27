@@ -5,7 +5,6 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Form, HTTPException, status, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -35,7 +34,7 @@ class Alert(Base):
     __tablename__ = "alerts"
     id = Column(Integer, primary_key=True, autoincrement=True)
     device_id = Column(String, ForeignKey("profiles.device_id"))
-    trigger_type = Column(String)  # "manual" or "auto_fall"
+    trigger_type = Column(String)
     latitude = Column(String)
     longitude = Column(String)
     status = Column(String, default="new")
@@ -75,11 +74,10 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # -------------------------------------------------------------------
-# FastAPI Application & Routes
+# FastAPI App & Page Routes
 # -------------------------------------------------------------------
 app = FastAPI(title="RescueLink")
 
-# Serve Static Files
 os.makedirs("app/static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -94,6 +92,11 @@ async def serve_registration():
     with open("app/static/registration.html", "r", encoding="utf-8") as f:
         return f.read()
 
+@app.get("/profile", response_class=HTMLResponse)
+async def serve_profile():
+    with open("app/static/profile.html", "r", encoding="utf-8") as f:
+        return f.read()
+
 # -------------------------------------------------------------------
 # API Endpoints
 # -------------------------------------------------------------------
@@ -106,11 +109,22 @@ async def responder_login(username: str = Form(...), password: str = Form(...)):
         detail="Invalid responder credentials"
     )
 
+@app.get("/api/profile/{device_id}")
+async def get_user_profile(device_id: str, db: Session = Depends(get_db)):
+    profile = db.query(Profile).filter(Profile.device_id == device_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="No profile found for this Device ID.")
+    return {
+        "device_id": profile.device_id,
+        "name": profile.name,
+        "age": profile.age,
+        "blood_group": profile.blood_group,
+        "medical_conditions": profile.medical_conditions,
+        "emergency_contact": profile.emergency_contact
+    }
+
 @app.post("/api/register")
-async def register_node(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def register_node(request: Request, db: Session = Depends(get_db)):
     content_type = request.headers.get("content-type", "")
     
     if "application/json" in content_type:
@@ -183,15 +197,3 @@ async def websocket_alerts(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-
-@app.get("/profile", response_class=HTMLResponse)
-async def serve_profile_page():
-    # Serves registration UI or redirect to dynamic profile view
-    with open("app/static/registration.html", "r", encoding="utf-8") as f:
-        return f.read()
-
-@app.get("/api/profiles")
-async def get_all_profiles(db: Session = Depends(get_db)):
-    # API endpoint to fetch all registered node profiles
-    profiles = db.query(Profile).all()
-    return profiles

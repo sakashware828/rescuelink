@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Node Profile Viewer</title>
+  <title>RescueLink — User Profile Lookup</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
@@ -12,7 +12,7 @@
   <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
     <div class="flex items-center space-x-3">
       <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
-      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Profile Lookup</span></span>
+      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Profile</span></span>
     </div>
     <div class="flex space-x-4 text-sm font-semibold">
       <a href="/dashboard" class="text-slate-400 hover:text-white transition">Dashboard</a>
@@ -21,82 +21,99 @@
     </div>
   </nav>
 
-  <!-- Main Profile Lookup Section -->
-  <div class="flex-1 flex flex-col justify-center items-center p-6">
-    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl space-y-6">
-      <div class="border-b border-slate-700 pb-4">
-        <h2 class="text-xl font-bold text-slate-100">Search Device Profile</h2>
-        <p class="text-xs text-slate-400 mt-1">Lookup registered medical details by entering a hardware node ID.</p>
+  <!-- Container -->
+  <div class="flex-1 flex justify-center items-center p-6">
+    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
+      
+      <!-- Lookup Input Block -->
+      <div class="border-b border-slate-700 pb-4 mb-6">
+        <h2 class="text-xl font-bold text-slate-100 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          Hardware Profile Lookup
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">Access or manage your registered ESP32 telemetry account.</p>
       </div>
 
-      <div class="flex space-x-2">
-        <input type="text" id="searchDeviceId" placeholder="Enter Device ID (e.g. ESP32-NODE-01)" 
-          class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 text-sm">
-        <button onclick="fetchProfile()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition">
-          Search
-        </button>
-      </div>
-
-      <!-- Result Card -->
-      <div id="profileResult" class="hidden bg-slate-900 border border-slate-700/80 rounded-lg p-5 space-y-3 text-sm">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-          <span class="text-xs uppercase font-bold text-slate-400">Device ID</span>
-          <span id="resDeviceId" class="font-bold text-red-400"></span>
-        </div>
+      <form id="searchForm" class="space-y-4 mb-6">
         <div>
-          <span class="text-xs text-slate-400 block">Victim Name:</span>
-          <span id="resName" class="font-semibold text-slate-100 text-base"></span>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <span class="text-xs text-slate-400 block">Blood Group:</span>
-            <span id="resBlood" class="font-semibold text-slate-200"></span>
-          </div>
-          <div>
-            <span class="text-xs text-slate-400 block">Emergency Contact:</span>
-            <span id="resContact" class="font-semibold text-slate-200"></span>
+          <label class="block text-slate-300 font-semibold text-xs mb-1">Enter Hardware Device ID</label>
+          <div class="flex space-x-2">
+            <input type="text" id="search_device_id" placeholder="e.g. ESP32_NODE_1" required
+              class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-red-500 transition">
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition">
+              Fetch Profile
+            </button>
           </div>
         </div>
-        <div>
-          <span class="text-xs text-slate-400 block">Critical Allergies / Notes:</span>
-          <span id="resNotes" class="text-slate-300 italic"></span>
+        <div id="searchError" class="text-red-400 text-xs hidden">No active profile registered under this Device ID.</div>
+      </form>
+
+      <!-- Profile Display Details (Hidden until fetched) -->
+      <div id="profileCard" class="hidden bg-slate-900/60 border border-slate-700 rounded-xl p-5 space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+          <span class="text-xs text-slate-400">Node ID</span>
+          <span id="display_device_id" class="text-sm font-bold text-red-400"></span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <span class="text-slate-400 block">Full Name</span>
+            <span id="display_name" class="font-semibold text-slate-100 text-sm"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">Age</span>
+            <span id="display_age" class="font-semibold text-slate-100 text-sm"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">Blood Group</span>
+            <span id="display_blood" class="font-semibold text-slate-100 text-sm"></span>
+          </div>
+          <div>
+            <span class="text-slate-400 block">Emergency Contact</span>
+            <span id="display_contact" class="font-semibold text-slate-100 text-sm"></span>
+          </div>
+        </div>
+
+        <div class="text-xs pt-2 border-t border-slate-800">
+          <span class="text-slate-400 block mb-1">Medical Conditions / Allergies</span>
+          <p id="display_medical" class="text-slate-300 bg-slate-900 p-2.5 rounded border border-slate-800"></p>
         </div>
       </div>
 
-      <div id="notFoundMsg" class="hidden text-center text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
-        No registered profile found for this Device ID.
-      </div>
     </div>
   </div>
 
   <script>
-    async function fetchProfile() {
-      const devId = document.getElementById("searchDeviceId").value.trim();
-      const resultCard = document.getElementById("profileResult");
-      const notFoundMsg = document.getElementById("notFoundMsg");
+    document.getElementById("searchForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const devId = document.getElementById("search_device_id").value.trim();
+      const errBox = document.getElementById("searchError");
+      const card = document.getElementById("profileCard");
 
-      if (!devId) return;
+      errBox.classList.add("hidden");
+      card.classList.add("hidden");
 
       try {
-        const res = await fetch(`/api/profile/${encodeURIComponent(devId)}`);
+        const res = await fetch(`/api/profile/${devId}`);
         if (res.ok) {
           const data = await res.json();
-          document.getElementById("resDeviceId").textContent = data.device_id;
-          document.getElementById("resName").textContent = data.victim_name;
-          document.getElementById("resBlood").textContent = data.blood_group;
-          document.getElementById("resContact").textContent = data.emergency_contact;
-          document.getElementById("resNotes").textContent = data.critical_allergies || "None";
+          document.getElementById("display_device_id").textContent = data.device_id;
+          document.getElementById("display_name").textContent = data.name;
+          document.getElementById("display_age").textContent = data.age || "N/A";
+          document.getElementById("display_blood").textContent = data.blood_group;
+          document.getElementById("display_contact").textContent = data.emergency_contact;
+          document.getElementById("display_medical").textContent = data.medical_conditions || "None listed";
           
-          resultCard.classList.remove("hidden");
-          notFoundMsg.classList.add("hidden");
+          card.classList.remove("hidden");
         } else {
-          resultCard.classList.add("hidden");
-          notFoundMsg.classList.remove("hidden");
+          errBox.classList.remove("hidden");
         }
       } catch (err) {
-        console.error("Error fetching profile:", err);
+        errBox.classList.remove("hidden");
       }
-    }
+    });
   </script>
 </body>
 </html>
