@@ -28,6 +28,8 @@ async def serve_dashboard():
 async def serve_profile():
     return render_html("profile.html")
 
+# Serves both /registration and /register to stop 404 errors
 @app.get("/registration")
+@app.get("/register")
 async def serve_registration():
     return render_html("registration.html")
