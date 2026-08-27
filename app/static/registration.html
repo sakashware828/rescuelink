@@ -30,23 +30,30 @@
           <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          Register Hardware Node
+          Register Hardware Node Profile
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Link an incoming ESP32 / LoRa / GSM device ID to a user profile for real-time telemetry resolution.</p>
+        <p class="text-xs text-slate-400 mt-1">Bind dynamic ESP32 telemetry hardware IDs to live user medical emergency profiles.</p>
       </div>
 
       <form id="regForm" class="space-y-4 text-sm">
         
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
-          <input type="text" id="device_id" name="device_id" value="ESP32_NODE_1" placeholder="e.g. ESP32_NODE_1" required 
+          <input type="text" id="device_id" name="device_id" placeholder="e.g. ESP32_NODE_1" required 
             class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
         </div>
 
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">User / Victim Full Name <span class="text-red-500">*</span></label>
-          <input type="text" id="victim_name" name="victim_name" placeholder="John Doe" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-slate-300 font-semibold mb-1">User Full Name <span class="text-red-500">*</span></label>
+            <input type="text" id="name" name="name" placeholder="Full Name" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Age <span class="text-red-500">*</span></label>
+            <input type="number" id="age" name="age" placeholder="Age" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -73,14 +80,14 @@
         </div>
 
         <div>
-          <label class="block text-slate-300 font-semibold mb-1">Critical Allergies / Medical Notes</label>
-          <textarea id="critical_allergies" name="critical_allergies" placeholder="e.g. Penicillin allergy, Diabetic, Asthma..." 
+          <label class="block text-slate-300 font-semibold mb-1">Medical Conditions / Allergies</label>
+          <textarea id="medical_conditions" name="medical_conditions" placeholder="e.g. Asthma, Penicillin allergy..." 
             class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-24 resize-none"></textarea>
         </div>
 
         <button type="submit" id="submitBtn"
           class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-4 flex items-center justify-center space-x-2">
-          <span id="btnText">Save & Link Node Profile</span>
+          <span id="btnText">Save & Link Hardware Profile</span>
         </button>
       </form>
     </div>
@@ -91,7 +98,7 @@
       e.preventDefault();
       
       const btnText = document.getElementById("btnText");
-      btnText.textContent = "Saving Profile...";
+      btnText.textContent = "Linking Hardware Profile...";
 
       const formData = new FormData(e.target);
 
@@ -102,16 +109,15 @@
         });
 
         if (res.ok) {
-          // Explicit redirect to Dashboard
           window.location.replace("/dashboard");
         } else {
-          alert("Error saving profile. Please try again.");
-          btnText.textContent = "Save & Link Node Profile";
+          alert("Error registering hardware node. Please check your inputs.");
+          btnText.textContent = "Save & Link Hardware Profile";
         }
       } catch (err) {
-        console.error("Failed to register:", err);
-        alert("Server communication error.");
-        btnText.textContent = "Save & Link Node Profile";
+        console.error("Registration error:", err);
+        alert("Failed to communicate with backend server.");
+        btnText.textContent = "Save & Link Hardware Profile";
       }
     });
   </script>
