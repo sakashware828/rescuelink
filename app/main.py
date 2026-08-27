@@ -8,10 +8,10 @@ import sqlite3
 
 app = FastAPI(title="RescueLink Emergency Network")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Static files & Jinja2 Templates
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/static")
 
-# WebSocket Connection Manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -29,7 +29,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Database Setup
 def init_db():
     conn = sqlite3.connect("rescuelink.db")
     cursor = conn.cursor()
@@ -61,7 +60,6 @@ def init_db():
 
 init_db()
 
-# Schemas
 class ProfileSchema(BaseModel):
     device_id: str
     passcode: str
