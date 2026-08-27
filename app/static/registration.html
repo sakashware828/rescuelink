@@ -1,226 +1,252 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RescueLink - Profile Registration</title>
-    <style>
-        body { background-color: #0f172a; font-family: Arial, sans-serif; color: #f8fafc;
-            display: flex; justify-content: center; padding: 20px; }
-        .card { background-color: #1e293b; border-radius: 8px; padding: 24px; width: 100%;
-            max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; }
-        h2 { color: #ffffff; font-size: 1.25rem; margin-bottom: 16px; }
-        .required-asterisk { color: #ef4444; margin-left: 2px; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
-        .full-width { grid-column: span 2; }
-        label { color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px; font-weight: 600; }
-        input, select, textarea { background-color: #0f172a; border: 1px solid #334155;
-            border-radius: 6px; padding: 10px; color: #ffffff; font-size: 0.95rem; outline: none; }
-        input:focus, select:focus, textarea:focus { border-color: #3b82f6; }
-        input::placeholder, textarea::placeholder { color: #64748b; }
-        .password-container { position: relative; display: flex; align-items: center; }
-        .password-container input { width: 100%; padding-right: 40px; box-sizing: border-box; }
-        .toggle-password { position: absolute; right: 10px; background: none; border: none;
-            color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0; margin: 0; width: auto; }
-        .error-message { color: #f87171; font-size: 0.8rem; margin-top: 4px; display: none; }
-        button { padding: 12px; border: none; border-radius: 6px; font-weight: bold;
-            font-size: 1rem; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-auth { background-color: #ef4444; color: #ffffff; }
-        .btn-submit { background-color: #10b981; color: #ffffff; }
-        button:hover { opacity: 0.9; }
-        .nav-link { color: #94a3b8; font-size: 0.85rem; text-align: center; display: block; margin-top: -10px; margin-bottom: 20px; }
-        .nav-link a { color: #3b82f6; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RescueLink | Hardware Node Registration</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-dark: #162036;
+      --border-dark: #1e2d4a;
+      --accent-red: #ef4444;
+      --accent-blue: #38bdf8;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-nav {
+      text-align: center;
+      padding: 1.75rem 1rem 1rem;
+    }
+
+    .nav-links a {
+      color: var(--accent-blue);
+      text-decoration: none;
+      margin: 0 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .card-custom {
+      background-color: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .card-title-custom {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .form-label {
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 0.88rem;
+      margin-bottom: 5px;
+    }
+
+    .text-danger-star {
+      color: var(--accent-red);
+    }
+
+    .form-control, .form-select {
+      background-color: #0d1627;
+      border: 1px solid var(--border-dark);
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: #0d1627;
+      color: #ffffff;
+      border-color: var(--accent-red);
+      box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-submit {
+      background-color: var(--accent-red);
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .btn-submit:hover {
+      background-color: #dc2626;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-    <div style="width: 100%; max-width: 600px;">
 
-        <h2 style="text-align:center;">RescueLink Registration</h2>
-        <p class="nav-link">
-            <a href="/dashboard">Dashboard</a> &nbsp;|&nbsp;
-            <a href="/registration">Registration</a> &nbsp;|&nbsp;
-            <a href="/profile">Profile</a>
-        </p>
+  <!-- Top Title & Navigation -->
+  <div class="top-nav">
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+      <span class="badge bg-danger fs-6 px-2 py-1">RL</span>
+      <h2 class="fw-bold m-0">RescueLink Registration</h2>
+    </div>
+    <div class="nav-links">
+      <a href="/"><i class="bi bi-house-door me-1"></i>Home</a> &bull;
+      <a href="/dashboard"><i class="bi bi-broadcast me-1"></i>Dashboard</a> &bull;
+      <a href="/registration" class="text-white fw-bold"><i class="bi bi-plus-circle me-1"></i>Registration</a> &bull;
+      <a href="/profile"><i class="bi bi-person-badge me-1"></i>Profile</a>
+    </div>
+  </div>
 
-        <!-- Device Auth Card -->
-        <div class="card">
-            <h2>Already registered? Load your profile</h2>
-            <form id="authForm" onsubmit="handleAuth(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Device ID <span class="required-asterisk">*</span></label>
-                        <input type="text" id="authDeviceId" placeholder="001" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Passcode <span class="required-asterisk">*</span></label>
-                        <div class="password-container">
-                            <input type="password" id="authPasscode" placeholder="Passcode" required>
-                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('authPasscode', this)">👁️</button>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="btn-auth">Authenticate &amp; Fetch Data</button>
-            </form>
+  <div class="container pb-5" style="max-width: 680px;">
+    
+    <!-- Dynamic Alert Box -->
+    <div id="statusAlert" class="alert d-none mb-4" role="alert"></div>
+
+    <!-- Registration Card -->
+    <div class="card card-custom p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-25 pb-3">
+        <h4 class="card-title-custom m-0"><i class="bi bi-cpu text-danger me-2"></i>Register Hardware Node Profile</h4>
+        <small class="text-secondary">All * fields required</small>
+      </div>
+
+      <form id="profileForm" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Device ID / Node ID <span class="text-danger-star">*</span></label>
+          <input type="text" id="deviceId" class="form-control" placeholder="e.g. 001 or ESP32_NODE_SIM" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Set Passcode <span class="text-danger-star">*</span></label>
+          <input type="password" id="passcode" class="form-control" placeholder="••••••••" required>
+        </div>
+        
+        <div class="col-12">
+          <label class="form-label">Subject / Patient Full Name <span class="text-danger-star">*</span></label>
+          <input type="text" id="name" class="form-control" placeholder="e.g. Aarav Sharma" required>
         </div>
 
-        <!-- Profile Details Card -->
-        <div class="card">
-            <h2>📝 Register Hardware Node Profile</h2>
-            <form id="profileForm" onsubmit="handleSave(event)">
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label>Device ID <span class="required-asterisk">*</span></label>
-                        <input type="text" id="deviceId" placeholder="001" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Set Passcode <span class="required-asterisk">*</span></label>
-                        <div class="password-container">
-                            <input type="password" id="passcode" required>
-                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('passcode', this)">👁️</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Full Name <span class="required-asterisk">*</span></label>
-                        <input type="text" id="fullName" placeholder="John Doe" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Age <span class="required-asterisk">*</span></label>
-                        <input type="number" id="age" min="1" max="120" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Blood Group <span class="required-asterisk">*</span></label>
-                        <select id="bloodGroup" required>
-                            <option value="">Select</option>
-                            <option>A+</option><option>A-</option>
-                            <option>B+</option><option>B-</option>
-                            <option>O+</option><option>O-</option>
-                            <option>AB+</option><option>AB-</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Emergency Contact Number <span class="required-asterisk">*</span></label>
-                        <input type="tel" id="emergencyPhone" placeholder="10 digit phone number" required>
-                        <span id="phoneError" class="error-message">Phone number must contain exactly 10 digits.</span>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Medical Conditions / Allergies</label>
-                        <textarea id="medicalConditions" rows="3" placeholder="None listed"></textarea>
-                    </div>
-
-                </div>
-                <button type="submit" class="btn-submit">Save &amp; Link Hardware Profile</button>
-            </form>
+        <div class="col-md-6">
+          <label class="form-label">Age <span class="text-danger-star">*</span></label>
+          <input type="number" id="age" class="form-control" min="1" max="120" placeholder="30" required>
         </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Blood Group <span class="text-danger-star">*</span></label>
+          <select id="bloodGroup" class="form-select" required>
+            <option value="" selected disabled>Select Blood Group</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Emergency Contact Phone <span class="text-danger-star">*</span></label>
+          <input type="tel" id="emergencyContact" class="form-control" placeholder="+91 98765 43210" required>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Government ID Type</label>
+          <select id="govtIdType" class="form-select">
+            <option value="Aadhaar">Aadhaar</option>
+            <option value="Passport">Passport</option>
+            <option value="Driver License">Driver License</option>
+            <option value="National ID">National ID</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Government ID Number</label>
+          <input type="text" id="govtIdNumber" class="form-control" placeholder="Optional ID Reference Number">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Medical Conditions / Allergies / Notes</label>
+          <textarea id="medicalConditions" class="form-control" rows="3" placeholder="e.g. Asthma, Penicillin Allergy, Diabetic, Cardiac History"></textarea>
+        </div>
+
+        <div class="col-12 mt-4">
+          <button type="submit" id="saveBtn" class="btn btn-submit w-100 py-3 fs-5 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-cloud-arrow-up-fill"></i> Save Hardware Node Profile
+          </button>
+        </div>
+      </form>
     </div>
 
-    <script>
-        function togglePasswordVisibility(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (input.type === "password") {
-                input.type = "text";
-                btn.textContent = "🙈";
-            } else {
-                input.type = "password";
-                btn.textContent = "👁️";
-            }
+    <!-- Switch to lookup helper -->
+    <div class="text-center mt-4 text-secondary">
+      Already registered a device? <a href="/profile" class="text-info text-decoration-none fw-semibold">Lookup / Edit your profile here &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    function showAlert(message, type = 'danger') {
+      const alertEl = document.getElementById('statusAlert');
+      alertEl.className = `alert alert-${type} mb-4 text-center fw-semibold`;
+      alertEl.textContent = message;
+      alertEl.classList.remove('d-none');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Saving Profile...';
+
+      const payload = {
+        device_id: document.getElementById('deviceId').value.trim(),
+        passcode: document.getElementById('passcode').value,
+        name: document.getElementById('name').value.trim(),
+        age: parseInt(document.getElementById('age').value, 10),
+        blood_group: document.getElementById('bloodGroup').value,
+        emergency_contact: document.getElementById('emergencyContact').value.trim(),
+        govt_id_type: document.getElementById('govtIdType').value,
+        govt_id_number: document.getElementById('govtIdNumber').value.trim(),
+        medical_conditions: document.getElementById('medicalConditions').value.trim() || "None listed"
+      };
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showAlert(`Success! Hardware Profile for Device '${payload.device_id}' has been registered.`, 'success');
+          setTimeout(() => {
+            window.location.href = '/profile';
+          }, 1500);
+        } else {
+          showAlert(data.detail || data.message || 'Failed to save profile.');
         }
-
-        function validatePhoneNumber(phoneInput) {
-            const digitsOnly = phoneInput.replace(/\D/g, '');
-            let coreDigits = digitsOnly;
-            if (digitsOnly.length > 10) {
-                coreDigits = digitsOnly.slice(-10);
-            }
-            return coreDigits.length === 10;
-        }
-
-        async function handleAuth(event) {
-            event.preventDefault();
-            const device_id = document.getElementById('authDeviceId').value.trim();
-            const passcode = document.getElementById('authPasscode').value;
-
-            try {
-                const response = await fetch('/api/lookup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id, passcode })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    document.getElementById('deviceId').value = device_id;
-                    document.getElementById('passcode').value = passcode;
-                    document.getElementById('fullName').value = data.name || '';
-                    document.getElementById('age').value = data.age || '';
-                    document.getElementById('bloodGroup').value = data.blood_group || '';
-                    document.getElementById('emergencyPhone').value = data.emergency_contact || '';
-                    document.getElementById('medicalConditions').value = data.medical_conditions || '';
-                    alert("Profile loaded successfully!");
-                } else {
-                    const err = await response.json();
-                    alert("Authentication failed: " + (err.detail || "Invalid credentials"));
-                }
-            } catch (error) {
-                alert("Error connecting to server.");
-            }
-        }
-
-        async function handleSave(event) {
-            event.preventDefault();
-
-            const form = document.getElementById('profileForm');
-            const phoneInput = document.getElementById('emergencyPhone').value;
-            const phoneError = document.getElementById('phoneError');
-
-            let isValid = true;
-
-            if (!validatePhoneNumber(phoneInput)) {
-                phoneError.style.display = 'block';
-                isValid = false;
-            } else {
-                phoneError.style.display = 'none';
-            }
-
-            if (!form.checkValidity() || !isValid) {
-                form.reportValidity();
-                return;
-            }
-
-            const payload = {
-                device_id: document.getElementById('deviceId').value.trim(),
-                passcode: document.getElementById('passcode').value,
-                name: document.getElementById('fullName').value.trim(),
-                age: parseInt(document.getElementById('age').value, 10),
-                blood_group: document.getElementById('bloodGroup').value.trim(),
-                emergency_contact: document.getElementById('emergencyPhone').value.trim(),
-                medical_conditions: document.getElementById('medicalConditions').value.trim() || "None listed"
-            };
-
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    alert("Hardware Profile registered successfully!");
-                } else {
-                    const err = await response.json();
-                    alert("Registration failed: " + (err.detail || "Unknown error"));
-                }
-            } catch (error) {
-                alert("Network error: Could not save profile.");
-            }
-        }
-    </script>
+      } catch (err) {
+        showAlert('Network error saving profile to server.');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill"></i> Save Hardware Node Profile';
+      }
+    });
+  </script>
 </body>
 </html>

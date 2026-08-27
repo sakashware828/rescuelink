@@ -3,129 +3,181 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink Registration</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>RescueLink | Device Linker & Profile Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-dark: #162036;
+      --border-dark: #1e2d4a;
+      --accent-red: #ef4444;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+    }
+
     body {
-      background-color: #0b1329;
+      background-color: var(--bg-dark);
       color: #ffffff;
       font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+
     .top-nav {
       text-align: center;
-      padding-top: 1.5rem;
-      padding-bottom: 1rem;
+      padding: 1.75rem 1rem 1rem;
     }
-    .top-nav a {
-      color: #38bdf8;
+
+    .nav-links a {
+      color: var(--accent-blue);
       text-decoration: none;
-      margin: 0 8px;
+      margin: 0 10px;
+      font-size: 0.95rem;
+      font-weight: 500;
     }
-    .top-nav a:hover {
+    .nav-links a:hover {
       text-decoration: underline;
     }
+
     .card-custom {
-      background-color: #162036;
-      border: 1px solid #1e2d4a;
-      border-radius: 8px;
+      background-color: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
-    .card-title-custom {
-      color: #ffffff;
-      font-weight: 700;
-    }
+
     .form-label {
-      color: #f8fafc;
+      color: #cbd5e1;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
+      margin-bottom: 5px;
     }
-    .text-danger-star {
-      color: #ef4444;
-    }
+
     .form-control, .form-select {
       background-color: #0d1627;
-      border: 1px solid #1e2d4a;
+      border: 1px solid var(--border-dark);
       color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
     }
-    .form-control::placeholder {
-      color: #475569;
-    }
+
     .form-control:focus, .form-select:focus {
       background-color: #0d1627;
       color: #ffffff;
-      border-color: #ef4444;
-      box-shadow: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.25);
     }
-    .btn-submit {
-      background-color: #ef4444;
+
+    .btn-auth {
+      background-color: var(--accent-red);
       border: none;
       color: white;
       font-weight: 600;
+      padding: 11px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
     }
-    .btn-submit:hover {
-      background-color: #dc2626;
+    .btn-auth:hover { background-color: #dc2626; color: white; }
+
+    .btn-update {
+      background-color: #2563eb;
+      border: none;
       color: white;
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+    .btn-update:hover { background-color: #1d4ed8; color: white; }
+
+    #detailsCard {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Title & Simple Navigation Bar -->
+  <!-- Top Title & Navigation -->
   <div class="top-nav">
-    <h2 class="fw-bold mb-1">RescueLink Registration</h2>
-    <div>
-      <a href="/dashboard">Dashboard</a> | 
-      <a href="/register">Registration</a> | 
-      <a href="/profile">Profile</a>
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+      <span class="badge bg-danger fs-6 px-2 py-1">RL</span>
+      <h2 class="fw-bold m-0">Device Linker & Profile Management</h2>
+    </div>
+    <div class="nav-links">
+      <a href="/"><i class="bi bi-house-door me-1"></i>Home</a> &bull;
+      <a href="/dashboard"><i class="bi bi-broadcast me-1"></i>Dashboard</a> &bull;
+      <a href="/registration"><i class="bi bi-plus-circle me-1"></i>Registration</a> &bull;
+      <a href="/profile" class="text-white fw-bold"><i class="bi bi-person-badge me-1"></i>Profile</a>
     </div>
   </div>
 
-  <div class="container pb-5" style="max-width: 650px;">
+  <div class="container pb-5" style="max-width: 680px;">
     
-    <!-- Dynamic Alert Box -->
-    <div id="statusAlert" class="alert d-none mb-4" role="alert"></div>
+    <!-- Status Toast / Alert -->
+    <div id="statusAlert" class="alert d-none mb-4 text-center fw-semibold" role="alert"></div>
 
-    <!-- Section 1: Authentication Form -->
+    <!-- Step 1: Authentication & Lookup Card -->
     <div class="card card-custom p-4 mb-4">
-      <h4 class="card-title-custom mb-3">Already registered? Load your profile</h4>
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-25 pb-3">
+        <h5 class="fw-bold m-0 text-white"><i class="bi bi-shield-lock text-danger me-2"></i>Authenticate Hardware Node</h5>
+        <small class="text-secondary">Enter Node Credentials</small>
+      </div>
+
       <form id="authForm" class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Device ID <span class="text-danger-star">*</span></label>
-          <input type="text" id="authDeviceId" class="form-control" placeholder="001" required>
+          <label class="form-label">Device ID <span class="text-danger">*</span></label>
+          <input type="text" id="authDeviceId" class="form-control" placeholder="e.g. 001 or ESP32_NODE_SIM" required>
         </div>
         <div class="col-md-6">
-          <label class="form-label">Passcode <span class="text-danger-star">*</span></label>
+          <label class="form-label">Passcode <span class="text-danger">*</span></label>
           <input type="password" id="authPasscode" class="form-control" placeholder="Passcode" required>
         </div>
-        <div class="col-12 mt-4">
-          <button type="submit" id="authBtn" class="btn btn-submit w-100 py-2 fs-5">Authenticate & Fetch Data</button>
+        <div class="col-12 mt-3">
+          <button type="submit" id="authBtn" class="btn btn-auth w-100 py-2 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-unlock-fill"></i> Authenticate & Fetch Profile
+          </button>
         </div>
       </form>
     </div>
 
-    <!-- Section 2: Registration / Edit Form -->
-    <div class="card card-custom p-4">
-      <h4 class="card-title-custom mb-3">📝 Register Hardware Node Profile</h4>
-      <form id="profileForm" class="row g-3">
+    <!-- Step 2: Edit & Update Profile Card (Hidden Until Authenticated) -->
+    <div id="detailsCard" class="card card-custom p-4">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom border-secondary border-opacity-25 pb-3">
+        <h5 class="fw-bold m-0 text-info"><i class="bi bi-person-check-fill me-2"></i>Linked Emergency Profile</h5>
+        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Authenticated</span>
+      </div>
+
+      <form id="updateForm" class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Device ID <span class="text-danger-star">*</span></label>
-          <input type="text" id="deviceId" class="form-control" placeholder="001" required>
+          <label class="form-label">Device ID (Read-only)</label>
+          <input type="text" id="profDeviceId" class="form-control" readonly style="opacity: 0.75; cursor: not-allowed;">
         </div>
         <div class="col-md-6">
-          <label class="form-label">Set Passcode <span class="text-danger-star">*</span></label>
-          <input type="password" id="passcode" class="form-control" required>
+          <label class="form-label">Passcode <span class="text-danger">*</span></label>
+          <input type="password" id="profPasscode" class="form-control" required>
         </div>
+
         <div class="col-12">
-          <label class="form-label">Full Name <span class="text-danger-star">*</span></label>
-          <input type="text" id="name" class="form-control" placeholder="John Doe" required>
+          <label class="form-label">Subject / Full Name <span class="text-danger">*</span></label>
+          <input type="text" id="profName" class="form-control" required>
         </div>
+
         <div class="col-md-6">
-          <label class="form-label">Age <span class="text-danger-star">*</span></label>
-          <input type="number" id="age" class="form-control" min="0" required>
+          <label class="form-label">Age <span class="text-danger">*</span></label>
+          <input type="number" id="profAge" class="form-control" min="1" max="120" required>
         </div>
+
         <div class="col-md-6">
-          <label class="form-label">Blood Group <span class="text-danger-star">*</span></label>
-          <select id="bloodGroup" class="form-select" required>
-            <option value="" selected disabled>Select</option>
+          <label class="form-label">Blood Group <span class="text-danger">*</span></label>
+          <select id="profBloodGroup" class="form-select" required>
             <option value="A+">A+</option>
             <option value="A-">A-</option>
             <option value="B+">B+</option>
@@ -136,94 +188,118 @@
             <option value="AB-">AB-</option>
           </select>
         </div>
+
         <div class="col-md-6">
-          <label class="form-label">Emergency Contact Phone <span class="text-danger-star">*</span></label>
-          <input type="text" id="emergencyContact" class="form-control" required>
+          <label class="form-label">Emergency Contact Phone <span class="text-danger">*</span></label>
+          <input type="tel" id="profEmergencyPhone" class="form-control" required>
         </div>
+
         <div class="col-md-6">
-          <label class="form-label">Govt ID Type</label>
-          <select id="govtIdType" class="form-select">
+          <label class="form-label">Government ID Type</label>
+          <select id="profGovtIdType" class="form-select">
             <option value="Aadhaar">Aadhaar</option>
             <option value="Passport">Passport</option>
             <option value="Driver License">Driver License</option>
+            <option value="National ID">National ID</option>
           </select>
         </div>
+
         <div class="col-12">
-          <label class="form-label">Govt ID Number</label>
-          <input type="text" id="govtIdNumber" class="form-control">
+          <label class="form-label">Government ID Number</label>
+          <input type="text" id="profGovtIdNumber" class="form-control">
         </div>
+
         <div class="col-12">
-          <label class="form-label">Medical Conditions / Allergies</label>
-          <textarea id="medicalConditions" class="form-control" rows="2" placeholder="None listed"></textarea>
+          <label class="form-label">Medical Conditions / Allergies / Notes</label>
+          <textarea id="profMedicalConditions" class="form-control" rows="3"></textarea>
         </div>
+
         <div class="col-12 mt-4">
-          <button type="submit" id="saveBtn" class="btn btn-submit w-100 py-2 fs-5">Save Hardware Profile</button>
+          <button type="submit" id="updateBtn" class="btn btn-update w-100 py-3 fs-5 d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-save-fill"></i> Save Changes to Profile
+          </button>
         </div>
       </form>
     </div>
+
+    <!-- Need to register? -->
+    <div class="text-center mt-4 text-secondary">
+      Haven't registered this device yet? <a href="/registration" class="text-info text-decoration-none fw-semibold">Register a new device here &rarr;</a>
+    </div>
+
   </div>
 
   <script>
     function showAlert(message, type = 'danger') {
       const alertEl = document.getElementById('statusAlert');
-      alertEl.className = `alert alert-${type} mb-4`;
+      alertEl.className = `alert alert-${type} mb-4 text-center fw-semibold`;
       alertEl.textContent = message;
       alertEl.classList.remove('d-none');
     }
 
+    // Step 1: Authentication Lookup
     document.getElementById('authForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const authBtn = document.getElementById('authBtn');
+      const deviceId = document.getElementById('authDeviceId').value.trim();
+      const passcode = document.getElementById('authPasscode').value;
+
       authBtn.disabled = true;
+      authBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Authenticating...';
 
       try {
         const res = await fetch('/api/lookup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            device_id: document.getElementById('authDeviceId').value,
-            passcode: document.getElementById('authPasscode').value
-          })
+          body: JSON.stringify({ device_id: deviceId, passcode: passcode })
         });
-        
+
         const data = await res.json();
-        
+
         if (res.ok) {
-          document.getElementById('deviceId').value = data.device_id || document.getElementById('authDeviceId').value;
-          document.getElementById('passcode').value = document.getElementById('authPasscode').value;
-          document.getElementById('name').value = data.name || '';
-          document.getElementById('age').value = data.age || '';
-          document.getElementById('bloodGroup').value = data.blood_group || '';
-          document.getElementById('emergencyContact').value = data.emergency_contact || '';
-          document.getElementById('govtIdType').value = data.govt_id_type || 'Aadhaar';
-          document.getElementById('govtIdNumber').value = data.govt_id_number || '';
-          document.getElementById('medicalConditions').value = data.medical_conditions || '';
-          showAlert('Profile details fetched successfully!', 'success');
+          document.getElementById('profDeviceId').value = data.device_id || deviceId;
+          document.getElementById('profPasscode').value = data.passcode || passcode;
+          document.getElementById('profName').value = data.name || '';
+          document.getElementById('profAge').value = data.age || '';
+          document.getElementById('profBloodGroup').value = data.blood_group || 'O+';
+          document.getElementById('profEmergencyPhone').value = data.emergency_contact || '';
+          document.getElementById('profGovtIdType').value = data.govt_id_type || 'Aadhaar';
+          document.getElementById('profGovtIdNumber').value = data.govt_id_number || '';
+          document.getElementById('profMedicalConditions').value = data.medical_conditions || '';
+
+          document.getElementById('detailsCard').style.display = 'block';
+          showAlert(`Successfully loaded profile for Node '${deviceId}'!`, 'success');
+          document.getElementById('detailsCard').scrollIntoView({ behavior: 'smooth' });
         } else {
-          showAlert(data.detail || data.message || 'Authentication failed: Check Device ID or Passcode');
+          document.getElementById('detailsCard').style.display = 'none';
+          showAlert(data.detail || data.message || 'Authentication failed. Please verify Device ID & Passcode.');
         }
       } catch (err) {
-        showAlert('Network error reaching backend server.');
+        document.getElementById('detailsCard').style.display = 'none';
+        showAlert('Network error connecting to backend server.');
       } finally {
         authBtn.disabled = false;
+        authBtn.innerHTML = '<i class="bi bi-unlock-fill"></i> Authenticate & Fetch Profile';
       }
     });
 
-    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    // Step 2: Update Profile
+    document.getElementById('updateForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const saveBtn = document.getElementById('saveBtn');
-      saveBtn.disabled = true;
+      const updateBtn = document.getElementById('updateBtn');
+      updateBtn.disabled = true;
+      updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Updating...';
 
       const payload = {
-        device_id: document.getElementById('deviceId').value,
-        passcode: document.getElementById('passcode').value,
-        name: document.getElementById('name').value,
-        age: parseInt(document.getElementById('age').value, 10),
-        blood_group: document.getElementById('bloodGroup').value,
-        emergency_contact: document.getElementById('emergencyContact').value,
-        govt_id_type: document.getElementById('govtIdType').value,
-        govt_id_number: document.getElementById('govtIdNumber').value,
-        medical_conditions: document.getElementById('medicalConditions').value || "None listed"
+        device_id: document.getElementById('profDeviceId').value,
+        passcode: document.getElementById('profPasscode').value,
+        name: document.getElementById('profName').value.trim(),
+        age: parseInt(document.getElementById('profAge').value, 10),
+        blood_group: document.getElementById('profBloodGroup').value,
+        emergency_contact: document.getElementById('profEmergencyPhone').value.trim(),
+        govt_id_type: document.getElementById('profGovtIdType').value,
+        govt_id_number: document.getElementById('profGovtIdNumber').value.trim(),
+        medical_conditions: document.getElementById('profMedicalConditions').value.trim() || "None listed"
       };
 
       try {
@@ -235,14 +311,15 @@
 
         const data = await res.json();
         if (res.ok) {
-          showAlert('Hardware Node Profile Saved!', 'success');
+          showAlert(`Profile for Node '${payload.device_id}' updated successfully!`, 'success');
         } else {
-          showAlert(data.detail || data.message || 'Failed to save profile.');
+          showAlert(data.detail || data.message || 'Failed to update profile.');
         }
       } catch (err) {
-        showAlert('Network error saving profile.');
+        showAlert('Network error saving profile update.');
       } finally {
-        saveBtn.disabled = false;
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = '<i class="bi bi-save-fill"></i> Save Changes to Profile';
       }
     });
   </script>

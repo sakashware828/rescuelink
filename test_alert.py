@@ -1,36 +1,49 @@
+"""
+RescueLink — Instant Test Alert Dispatcher
+--------------------------------------------
+Sends a high-priority emergency test alert directly to the backend
+over HTTP (or MQTT if configured) to test dashboard and responder notifications.
+
+Usage:
+  py test_alert.py
+"""
+
 import json
-import time
-import paho.mqtt.client as mqtt
+import urllib.request
+import urllib.error
 
-# Configuration
-MQTT_HOST = "localhost"  # Change to "127.0.0.1" if needed
-MQTT_PORT = 1883
-MQTT_TOPIC = "rescuelink/alerts"
+API_URL = "http://localhost:8000/api/alerts"
 
-# Sample emergency alert payload matching your route coordinates
 alert_payload = {
     "device_id": "001",
-    "status": "EMERGENCY",
+    "trigger_type": "SOS_MANUAL",
     "latitude": 19.0760,
     "longitude": 72.8777,
-    "speed": 0,
-    "battery": 85,
-    "message": "Manual SOS trigger test"
+    "speed": 0.0,
+    "battery": 82,
+    "message": "Manual emergency SOS panic button pressed by user."
 }
 
-# Connect and publish
-client = mqtt.Client()
+def main():
+    print(f"Sending emergency test alert to {API_URL}...")
+    
+    try:
+        data_bytes = json.dumps(alert_payload).encode("utf-8")
+        req = urllib.request.Request(
+            API_URL,
+            data=data_bytes,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            print("\n[SUCCESS] Emergency alert successfully dispatched!")
+            print(json.dumps(result, indent=2))
+            print("\nCheck live updates on Dashboard at: http://localhost:8000/dashboard")
+    except urllib.error.URLError as e:
+        print(f"\n[ERROR] Could not connect to {API_URL}: {e}")
+        print("Please ensure your FastAPI backend is running with:")
+        print("  py -m uvicorn app.main:app --reload")
 
-try:
-    print(f"Connecting to MQTT broker at {MQTT_HOST}:{MQTT_PORT}...")
-    client.connect(MQTT_HOST, MQTT_PORT, 60)
-    
-    # Publish payload
-    json_data = json.dumps(alert_payload)
-    client.publish(MQTT_TOPIC, json_data)
-    print(f"Success! Test alert sent to topic '{MQTT_TOPIC}':")
-    print(json_data)
-    
-    client.disconnect()
-except Exception as e:
-    print(f"Failed to connect or send alert: {e}")
+if __name__ == "__main__":
+    main()

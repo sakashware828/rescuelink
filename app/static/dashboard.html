@@ -2,109 +2,429 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>RescueLink | Responder Operations</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RescueLink | Responder Operations Dashboard</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
-    body { background-color: #0b0f19; color: #f8fafc; height: 100vh; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
-    .navbar-custom { background-color: #1e293b; border-bottom: 1px solid #334155; height: 60px; }
-    .sidebar { width: 420px; background-color: #0f172a; border-right: 1px solid #334155; overflow-y: auto; height: calc(100vh - 60px); }
-    .map-container { flex-grow: 1; height: calc(100vh - 60px); }
-    .alert-card { background-color: #1e293b; border-left: 4px solid #ef4444; border-radius: 6px; margin-bottom: 12px; }
+    :root {
+      --bg-dark: #0b0f19;
+      --panel-dark: #0f172a;
+      --card-dark: #1e293b;
+      --border-dark: #334155;
+      --accent-red: #ef4444;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .navbar-custom {
+      background-color: var(--panel-dark);
+      border-bottom: 1px solid var(--border-dark);
+      height: 62px;
+      padding: 0 1.5rem;
+    }
+
+    .brand-logo {
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      font-size: 1.15rem;
+      color: #ffffff;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .main-container {
+      display: flex;
+      height: calc(100vh - 62px);
+      width: 100vw;
+    }
+
+    .sidebar {
+      width: 440px;
+      min-width: 360px;
+      max-width: 480px;
+      background-color: var(--panel-dark);
+      border-right: 1px solid var(--border-dark);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sidebar-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-dark);
+      background-color: rgba(15, 23, 42, 0.95);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+    }
+
+    .map-container {
+      flex: 1;
+      height: 100%;
+      background-color: #1e293b;
+    }
+
+    .alert-card {
+      background-color: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-left: 4px solid var(--accent-red);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .alert-card:hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.3);
+    }
+
+    .alert-card.new-alert-pulse {
+      animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .trigger-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .btn-center-map {
+      background-color: rgba(56, 189, 248, 0.1);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 5px;
+      transition: all 0.15s;
+    }
+    .btn-center-map:hover {
+      background-color: var(--accent-blue);
+      color: #0f172a;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-connected { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+    .status-disconnected { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    /* Custom Leaflet Dark Marker Popup */
+    .leaflet-popup-content-wrapper {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+      border: 1px solid #475569;
+      border-radius: 8px !important;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .leaflet-popup-tip {
+      background-color: #1e293b !important;
+    }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-custom px-4 d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center gap-2">
-      <a href="/" class="text-decoration-none text-white fw-bold"><span class="badge bg-danger">RL</span> RESCUELINK</a>
-      <span class="text-secondary small ms-2">Responder Operations Dashboard</span>
-    </div>
+
+  <!-- Top Navbar -->
+  <nav class="navbar navbar-custom d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-3">
-      <span class="badge bg-secondary" id="wsStatus">Disconnected</span>
-      <a href="/profile" class="btn btn-outline-light btn-sm">Switch to Device Linker</a>
+      <a href="/" class="brand-logo">
+        <span class="badge bg-danger px-2 py-1 fs-6">RL</span>
+        <span>RESCUELINK</span>
+      </a>
+      <span class="text-secondary d-none d-md-inline small border-start border-secondary ps-3">
+        <i class="bi bi-broadcast text-danger me-1"></i> Responder Operations Dashboard
+      </span>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <!-- Live WebSocket Connection Badge -->
+      <span class="badge bg-dark border border-secondary px-3 py-2 d-flex align-items-center text-white" id="wsStatusBadge">
+        <span class="status-indicator status-disconnected" id="wsIndicator"></span>
+        <span id="wsStatusText">Connecting...</span>
+      </span>
+
+      <!-- Quick Trigger Simulation Button -->
+      <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" onclick="triggerTestAlert()" id="btnSimAlert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Simulate Alert</span>
+      </button>
+
+      <!-- Nav Links -->
+      <a href="/profile" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1">
+        <i class="bi bi-person-badge"></i>
+        <span class="d-none d-sm-inline">Profile</span>
+      </a>
+      <a href="/registration" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+        <i class="bi bi-plus-circle"></i>
+        <span class="d-none d-sm-inline">Register Node</span>
+      </a>
     </div>
   </nav>
 
-  <div class="d-flex">
-    <div class="sidebar p-3">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="m-0 fw-bold text-uppercase text-secondary">Live Emergency Feed</h6>
-        <span class="badge bg-danger" id="activeCount">0 Active</span>
+  <!-- Main View Container -->
+  <div class="main-container">
+    
+    <!-- Left Live Feed Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="m-0 fw-bold text-uppercase text-secondary small">Live Emergency Feed</h6>
+          <span class="small text-muted" id="lastUpdated">Real-time Stream</span>
+        </div>
+        <span class="badge bg-danger rounded-pill px-3 py-2" id="activeCount">0 Alerts</span>
       </div>
-      <div id="feedList">
-        <p class="text-secondary small text-center my-5" id="emptyState">No active emergency alerts recorded.</p>
+
+      <div class="sidebar-content" id="feedList">
+        <div class="text-center my-5 py-5 text-secondary" id="emptyState">
+          <i class="bi bi-shield-check fs-1 text-secondary opacity-50 mb-3 d-block"></i>
+          <p class="mb-1 fw-semibold">No emergency alerts active</p>
+          <small class="text-muted">Incoming IoT node transmissions will appear here live.</small>
+        </div>
       </div>
-    </div>
-    <div class="map-container" id="map"></div>
+    </aside>
+
+    <!-- Right Full Map View -->
+    <main class="map-container" id="map"></main>
   </div>
 
+  <!-- Leaflet & Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script>
-    // Initialize Map with Mumbai default coordinates
-    const map = L.map('map').setView([19.0760, 72.8777], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-      attribution: '&copy; OpenStreetMap' 
+    // Initialize Map with default view
+    const defaultCoords = [19.0760, 72.8777]; // Mumbai Coordinates
+    const map = L.map('map', { zoomControl: true }).setView(defaultCoords, 13);
+
+    // Dark-themed tiles from CartoDB or standard OSM
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
     }).addTo(map);
 
-    // Fix map render sizing bugs on window resize/load
-    setTimeout(() => { map.invalidateSize(); }, 300);
+    setTimeout(() => { map.invalidateSize(); }, 250);
 
-    let activeAlerts = 0;
+    const markersMap = {};
+    let alertCount = 0;
     let ws;
 
+    // Custom Icon Maker for Leaflet
+    function createEmergencyIcon(type) {
+      return L.divIcon({
+        className: 'custom-emergency-marker',
+        html: `<div style="
+          background-color: #ef4444;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 3px solid #ffffff;
+          box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 14px;
+          font-weight: bold;
+        ">🚨</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+    }
+
+    // Add or Update Card in Sidebar & Marker on Map
+    function processAlert(data, isHistorical = false) {
+      const emptyState = document.getElementById('emptyState');
+      if (emptyState) emptyState.remove();
+
+      alertCount++;
+      document.getElementById('activeCount').innerText = `${alertCount} Alerts`;
+
+      const alertId = data.id || `alert_${Date.now()}_${Math.random()}`;
+      const lat = parseFloat(data.latitude) || 19.0760;
+      const lng = parseFloat(data.longitude) || 72.8777;
+      const trigger = data.trigger_type || data.status || 'EMERGENCY';
+      const name = data.name || 'Unregistered Node';
+      const age = data.age ? `${data.age} yrs` : 'N/A';
+      const blood = data.blood_group || 'N/A';
+      const phone = data.emergency_contact || 'N/A';
+      const medical = data.medical_conditions || 'None listed';
+      const timeStr = data.timestamp || new Date().toLocaleTimeString();
+
+      // Sidebar Card
+      const card = document.createElement('div');
+      card.className = `alert-card ${!isHistorical ? 'new-alert-pulse' : ''}`;
+      card.id = `card_${alertId}`;
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge bg-danger trigger-badge">${trigger}</span>
+          <small class="text-secondary"><i class="bi bi-clock me-1"></i>${timeStr}</small>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <h6 class="fw-bold text-white mb-0">${name} <span class="text-secondary fw-normal">(${age})</span></h6>
+          <small class="text-info fw-semibold">ID: ${data.device_id || 'N/A'}</small>
+        </div>
+
+        <p class="small text-secondary mb-1">
+          <strong class="text-light">Blood:</strong> <span class="badge bg-secondary">${blood}</span> &nbsp;|&nbsp;
+          <strong class="text-light">Contact:</strong> <a href="tel:${phone}" class="text-info text-decoration-none">${phone}</a>
+        </p>
+
+        ${data.govt_id_number ? `
+          <p class="small text-secondary mb-1">
+            <strong>${data.govt_id_type || 'Govt ID'}:</strong> ${data.govt_id_number}
+          </p>
+        ` : ''}
+
+        <p class="small text-warning mb-2">
+          <i class="bi bi-heart-pulse-fill me-1"></i><strong>Medical Notes:</strong> ${medical}
+        </p>
+
+        ${data.message ? `<p class="small text-muted mb-2 fst-italic">"${data.message}"</p>` : ''}
+
+        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-25">
+          <small class="text-muted font-monospace"><i class="bi bi-geo-alt me-1"></i>${lat.toFixed(4)}, ${lng.toFixed(4)}</small>
+          <button class="btn btn-center-map" onclick="focusMarker(${lat}, ${lng}, '${alertId}')">
+            <i class="bi bi-crosshair me-1"></i> Locate Map
+          </button>
+        </div>
+      `;
+
+      const feedList = document.getElementById('feedList');
+      if (isHistorical) {
+        feedList.appendChild(card);
+      } else {
+        feedList.prepend(card);
+      }
+
+      // Map Marker
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.marker([lat, lng], { icon: createEmergencyIcon(trigger) }).addTo(map);
+        
+        const popupContent = `
+          <div style="font-size: 0.9rem; padding: 2px;">
+            <div style="color: #ef4444; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">
+              🚨 ${trigger}
+            </div>
+            <h6 style="margin: 0 0 6px 0; color: #ffffff; font-weight: bold;">${name} (${age})</h6>
+            <div style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 4px;">
+              <strong>Node ID:</strong> ${data.device_id || 'N/A'}<br>
+              <strong>Blood:</strong> ${blood}<br>
+              <strong>Emergency Phone:</strong> <a href="tel:${phone}" style="color: #38bdf8;">${phone}</a><br>
+              <strong>Medical:</strong> <span style="color: #facc15;">${medical}</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
+              Time: ${timeStr}
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        markersMap[alertId] = marker;
+
+        if (!isHistorical) {
+          marker.openPopup();
+          map.flyTo([lat, lng], 15, { animate: true, duration: 1 });
+        }
+      }
+    }
+
+    function focusMarker(lat, lng, alertId) {
+      map.flyTo([lat, lng], 16, { animate: true, duration: 0.8 });
+      if (markersMap[alertId]) {
+        markersMap[alertId].openPopup();
+      }
+    }
+
+    // Fetch Existing Historical Alerts
+    async function loadRecentAlerts() {
+      try {
+        const res = await fetch('/api/alerts?limit=25');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.alerts && data.alerts.length > 0) {
+            // Reverse so oldest to newest in batch appending
+            data.alerts.slice().reverse().forEach(alert => processAlert(alert, true));
+            // Center map on latest alert
+            const latest = data.alerts[0];
+            if (latest.latitude && latest.longitude) {
+              map.setView([latest.latitude, latest.longitude], 14);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not prefetch recent alerts:", err);
+      }
+    }
+
+    // Connect WebSocket
     function connectWebSocket() {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
-      const statusBadge = document.getElementById('wsStatus');
+      const badge = document.getElementById('wsStatusBadge');
+      const indicator = document.getElementById('wsIndicator');
+      const text = document.getElementById('wsStatusText');
+
+      indicator.className = 'status-indicator status-disconnected';
+      text.innerText = 'Connecting...';
 
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        statusBadge.className = 'badge bg-success';
-        statusBadge.innerText = 'Live Feed Connected';
+        indicator.className = 'status-indicator status-connected';
+        text.innerText = 'Live Feed Connected';
       };
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          const emptyState = document.getElementById('emptyState');
-          if (emptyState) emptyState.remove();
-
-          activeAlerts++;
-          document.getElementById('activeCount').innerText = `${activeAlerts} Active`;
-
-          // Construct Feed Card
-          const card = document.createElement('div');
-          card.className = 'alert-card p-3';
-          card.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <span class="badge bg-danger">${data.trigger_type || 'EMERGENCY'}</span>
-              <small class="text-secondary">Node: ${data.device_id || 'N/A'}</small>
-            </div>
-            <h6 class="fw-bold mb-1">${data.name || 'Unknown Subject'} (${data.age || 'N/A'} yrs)</h6>
-            <p class="small text-secondary mb-1"><strong>Blood:</strong> ${data.blood_group || 'N/A'} | <strong>Contact:</strong> ${data.emergency_contact || 'N/A'}</p>
-            <p class="small text-warning mb-0"><strong>Medical Note:</strong> ${data.medical_conditions || 'None'}</p>
-          `;
-          document.getElementById('feedList').prepend(card);
-
-          // Update Map Marker & Center
-          const lat = parseFloat(data.latitude);
-          const lng = parseFloat(data.longitude);
-          
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const marker = L.marker([lat, lng]).addTo(map);
-            marker.bindPopup(`<b>${data.name || 'Unknown'}</b><br>Trigger: ${data.trigger_type || 'Alert'}`).openPopup();
-            map.setView([lat, lng], 14);
-          }
+          const alertData = JSON.parse(event.data);
+          processAlert(alertData, false);
         } catch (err) {
-          console.error("Failed to parse incoming WS message:", err);
+          console.error("Failed to parse WebSocket message:", err);
         }
       };
 
       ws.onclose = () => {
-        statusBadge.className = 'badge bg-danger';
-        statusBadge.innerText = 'Disconnected - Retrying...';
-        // Auto-reconnect every 3 seconds if connection drops
+        indicator.className = 'status-indicator status-disconnected';
+        text.innerText = 'Disconnected (Retrying)';
         setTimeout(connectWebSocket, 3000);
       };
 
@@ -113,7 +433,27 @@
       };
     }
 
-    // Start WebSocket Connection
+    // Trigger Test Alert via HTTP
+    async function triggerTestAlert() {
+      const btn = document.getElementById('btnSimAlert');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Triggering...';
+
+      try {
+        const res = await fetch('/api/test-alert', { method: 'POST' });
+        if (!res.ok) {
+          alert("Failed to simulate alert.");
+        }
+      } catch (e) {
+        alert("Error sending test alert request.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <span>Simulate Alert</span>';
+      }
+    }
+
+    // Initialize Dashboard
+    loadRecentAlerts();
     connectWebSocket();
   </script>
 </body>
