@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Node Registration & Identity Verification</title>
+  <title>RescueLink — Node Registration & Security Setup</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
@@ -26,36 +26,42 @@
       <div class="border-b border-slate-700 pb-4 mb-4">
         <h2 class="text-xl font-bold text-slate-100 flex items-center">
           <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
           </svg>
-          Identity Verified Hardware Registration
+          Secure Hardware Registration
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Bind ESP32 telemetry hardware to a verified citizen identity to prevent system misuse.</p>
+        <p class="text-xs text-slate-400 mt-1">Bind your hardware node to a secure passcode and verified ID to block unauthorized access.</p>
       </div>
 
       <form id="regForm" class="space-y-4 text-sm">
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
-          <input type="text" id="device_id" name="device_id" placeholder="e.g. ESP32_NODE_1" required 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
+            <input type="text" id="device_id" placeholder="e.g. ESP32_NODE_1" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Device Passcode <span class="text-red-500">*</span></label>
+            <input type="password" id="passcode" placeholder="Set a secret PIN/Password" required 
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2">
             <label class="block text-slate-300 font-semibold mb-1">Full Name (As per Govt ID) <span class="text-red-500">*</span></label>
-            <input type="text" id="name" name="name" placeholder="Full Name" required 
+            <input type="text" id="name" placeholder="Full Name" required 
               class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
           </div>
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Age <span class="text-red-500">*</span></label>
-            <input type="number" id="age" name="age" placeholder="Age" required 
+            <input type="number" id="age" placeholder="Age" required 
               class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
           </div>
         </div>
 
-        <!-- Government Identity Verification Block -->
         <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
-          <span class="text-xs font-bold text-red-400 uppercase tracking-wide block">🔒 Government Verification</span>
+          <span class="text-xs font-bold text-red-400 uppercase tracking-wide block">🔒 Identity Verification</span>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-slate-300 font-semibold text-xs mb-1">ID Document Type</label>
@@ -77,8 +83,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Blood Group <span class="text-red-500">*</span></label>
-            <select id="blood_group" name="blood_group" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 transition">
+            <select id="blood_group" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 transition">
               <option value="A+">A+</option>
               <option value="A-">A-</option>
               <option value="B+">B+</option>
@@ -92,20 +97,20 @@
 
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Emergency Contact <span class="text-red-500">*</span></label>
-            <input type="tel" id="emergency_contact" name="emergency_contact" placeholder="+91 9876543210" required 
+            <input type="tel" id="emergency_contact" placeholder="+91 9876543210" required 
               class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
           </div>
         </div>
 
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Medical Conditions / Allergies</label>
-          <textarea id="medical_conditions" name="medical_conditions" placeholder="e.g. Asthma, Penicillin allergy..." 
+          <textarea id="medical_conditions" placeholder="e.g. Asthma, Penicillin allergy..." 
             class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-20 resize-none"></textarea>
         </div>
 
         <button type="submit" id="submitBtn"
           class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-2 flex items-center justify-center space-x-2">
-          <span id="btnText">Verify Identity & Register Node</span>
+          <span id="btnText">Secure & Register Node</span>
         </button>
       </form>
     </div>
@@ -116,10 +121,11 @@
       e.preventDefault();
       
       const btnText = document.getElementById("btnText");
-      btnText.textContent = "Verifying Identity with Backend...";
+      btnText.textContent = "Encrypting & Registering...";
 
       const params = new URLSearchParams();
       params.append("device_id", document.getElementById("device_id").value.trim());
+      params.append("passcode", document.getElementById("passcode").value.trim());
       params.append("name", document.getElementById("name").value.trim());
       params.append("age", document.getElementById("age").value);
       params.append("blood_group", document.getElementById("blood_group").value);
@@ -139,13 +145,13 @@
           window.location.replace("/dashboard");
         } else {
           const errData = await res.json().catch(() => ({}));
-          alert("Verification Failed: " + (errData.detail || "Invalid Government ID payload"));
-          btnText.textContent = "Verify Identity & Register Node";
+          alert("Registration Failed: " + (errData.detail || "Error submitting form"));
+          btnText.textContent = "Secure & Register Node";
         }
       } catch (err) {
         console.error("Registration error:", err);
         alert("Server communication error.");
-        btnText.textContent = "Verify Identity & Register Node";
+        btnText.textContent = "Secure & Register Node";
       }
     });
   </script>

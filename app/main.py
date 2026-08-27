@@ -26,13 +26,14 @@ Base = declarative_base()
 class Profile(Base):
     __tablename__ = "profiles"
     device_id = Column(String, primary_key=True)
+    passcode = Column(String, nullable=False)  # Hardware PIN / Password to protect profile
     name = Column(String)
     age = Column(Integer)
     blood_group = Column(String)
     medical_conditions = Column(String)
     emergency_contact = Column(String)
-    govt_id_type = Column(String)       # e.g., "Aadhaar", "Passport", "DL"
-    govt_id_number = Column(String)     # Stored securely / masked
+    govt_id_type = Column(String)
+    govt_id_number = Column(String)
     is_verified = Column(Boolean, default=False)
 
 class Alert(Base):
@@ -54,11 +55,10 @@ def get_db():
     finally:
         db.close()
 
-# Helper function: Basic structural validation for government IDs
 def validate_govt_id(id_type: str, id_number: str) -> bool:
     clean_id = id_number.replace(" ", "").strip()
     if id_type == "Aadhaar":
-        return bool(re.match(r"^\d{12}$", clean_id))  # 12 numeric digits
+        return bool(re.match(r"^\d{12}$", clean_id))
     elif id_type == "PAN":
         return bool(re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", clean_id.upper()))
     elif id_type == "Passport":
@@ -70,7 +70,11 @@ def validate_govt_id(id_type: str, id_number: str) -> bool:
 # -------------------------------------------------------------------
 # Pydantic Schemas
 # -------------------------------------------------------------------
+class ProfileFetchSchema(BaseModel):
+    passcode: str
+
 class ProfileUpdateSchema(BaseModel):
+    passcode: str
     name: str
     age: int
     blood_group: str
@@ -128,24 +132,18 @@ async def serve_profile():
         return f.read()
 
 # -------------------------------------------------------------------
-# API Endpoints
+# Authenticated API Endpoints
 # -------------------------------------------------------------------
-@app.post("/api/login")
-async def responder_login(username: str = Form(...), password: str = Form(...)):
-    if username == "admin" and password == "rescue123":
-        return JSONResponse(content={"status": "success", "message": "Authenticated"})
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid responder credentials"
-    )
-
-@app.get("/api/profile/{device_id}")
-async def get_user_profile(device_id: str, db: Session = Depends(get_db)):
+@app.post("/api/profile/{device_id}")
+async def get_user_profile(device_id: str, payload: ProfileFetchSchema, db: Session = Depends(get_db)):
     profile = db.query(Profile).filter(Profile.device_id == device_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="No profile found for this Device ID.")
     
-    # Mask ID for privacy (e.g. XXXX-XXXX-1234)
+    # Authenticate Passcode
+    if profile.passcode != payload.passcode:
+        raise HTTPException(status_code=401, detail="Access Denied: Invalid Passcode.")
+    
     raw_id = profile.govt_id_number or ""
     masked_id = "XXXX-XXXX-" + raw_id[-4:] if len(raw_id) >= 4 else "VERIFIED"
 
@@ -167,6 +165,10 @@ async def update_user_profile(device_id: str, payload: ProfileUpdateSchema, db: 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found.")
     
+    # Authenticate Passcode
+    if profile.passcode != payload.passcode:
+        raise HTTPException(status_code=401, detail="Authentication Failed: Invalid Device Passcode.")
+
     if not validate_govt_id(payload.govt_id_type, payload.govt_id_number):
         raise HTTPException(status_code=400, detail=f"Invalid {payload.govt_id_type} format. Verification failed.")
 
@@ -189,6 +191,7 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
     if "application/json" in content_type:
         data = await request.json()
         device_id = data.get("device_id")
+        passcode = data.get("passcode")
         name = data.get("name") or data.get("victim_name")
         age = int(data.get("age", 0))
         blood_group = data.get("blood_group")
@@ -199,6 +202,7 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
     else:
         form = await request.form()
         device_id = form.get("device_id")
+        passcode = form.get("passcode")
         name = form.get("name") or form.get("victim_name")
         age = int(form.get("age", 0)) if form.get("age") else 0
         blood_group = form.get("blood_group")
@@ -207,14 +211,16 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
         govt_id_type = form.get("govt_id_type", "Aadhaar")
         govt_id_number = form.get("govt_id_number", "")
 
-    if not device_id or not name or not govt_id_number:
-        raise HTTPException(status_code=400, detail="Missing required fields including Government ID.")
+    if not device_id or not passcode or not name or not govt_id_number:
+        raise HTTPException(status_code=400, detail="Missing required fields: device_id, passcode, name, and govt_id_number.")
 
     if not validate_govt_id(govt_id_type, govt_id_number):
         raise HTTPException(status_code=400, detail=f"Invalid {govt_id_type} format. Verification failed.")
 
     profile = db.query(Profile).filter(Profile.device_id == device_id).first()
     if profile:
+        if profile.passcode != passcode:
+            raise HTTPException(status_code=401, detail="Cannot overwrite existing node: Invalid Passcode.")
         profile.name = name
         profile.age = age
         profile.blood_group = blood_group
@@ -226,6 +232,7 @@ async def register_node(request: Request, db: Session = Depends(get_db)):
     else:
         profile = Profile(
             device_id=device_id,
+            passcode=passcode,
             name=name,
             age=age,
             blood_group=blood_group,

@@ -26,34 +26,39 @@
       <div class="border-b border-slate-700 pb-4 mb-6">
         <h2 class="text-xl font-bold text-slate-100 flex items-center">
           <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
           </svg>
-          Hardware Profile Search & Edit
+          Authenticated Hardware Profile Lookup
         </h2>
-        <p class="text-xs text-slate-400 mt-1">Lookup registered ESP32 nodes to view verified government identity records.</p>
+        <p class="text-xs text-slate-400 mt-1">Authentication required. Enter your Device ID and Passcode to edit profile details.</p>
       </div>
 
       <form id="searchForm" class="space-y-4 mb-6">
-        <div>
-          <label class="block text-slate-300 font-semibold text-xs mb-1">Enter Hardware Device ID</label>
-          <div class="flex space-x-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 font-semibold text-xs mb-1">Device ID</label>
             <input type="text" id="search_device_id" placeholder="e.g. ESP32_NODE_1" required
-              class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-sm focus:outline-none focus:border-red-500 transition">
-            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition">
-              Fetch Profile
-            </button>
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-xs focus:outline-none focus:border-red-500 transition">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold text-xs mb-1">Passcode</label>
+            <input type="password" id="search_passcode" placeholder="Enter Device Passcode" required
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 text-xs focus:outline-none focus:border-red-500 transition">
           </div>
         </div>
-        <div id="searchError" class="text-red-400 text-xs hidden">No active profile registered under this Device ID.</div>
+        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-xs transition">
+          Authenticate & Load Profile
+        </button>
+        <div id="searchError" class="text-red-400 text-xs hidden">Authentication Failed: Invalid Device ID or Passcode.</div>
       </form>
 
-      <!-- View Mode Card -->
+      <!-- View Card -->
       <div id="profileViewCard" class="hidden bg-slate-900/60 border border-slate-700 rounded-xl p-5 space-y-4">
         <div class="flex justify-between items-center border-b border-slate-700 pb-2">
           <div>
             <span class="text-xs text-slate-400 block">Node ID: <strong id="display_device_id" class="text-red-400"></strong></span>
-            <span id="verificationBadge" class="inline-block mt-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40">
-              ✓ VERIFIED IDENTITY
+            <span class="inline-block mt-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/40">
+              ✓ AUTHENTICATED & VERIFIED
             </span>
           </div>
           <button id="enableEditBtn" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs px-3 py-1 rounded text-slate-200 transition">
@@ -94,10 +99,10 @@
         </div>
       </div>
 
-      <!-- Edit Mode Form -->
+      <!-- Edit Form -->
       <form id="editForm" class="hidden space-y-4 text-sm bg-slate-900/90 border border-red-500/40 rounded-xl p-5 mt-4">
         <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
-          <h3 class="text-xs font-bold text-red-400 uppercase tracking-wide">Update Verified Profile Details</h3>
+          <h3 class="text-xs font-bold text-red-400 uppercase tracking-wide">Edit Profile Details</h3>
           <button type="button" id="cancelEditBtn" class="text-xs text-slate-400 hover:text-white">Cancel</button>
         </div>
 
@@ -155,7 +160,7 @@
         <div id="updateStatus" class="text-xs hidden"></div>
 
         <button type="submit" id="saveBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded text-xs transition">
-          Re-Verify & Save Profile
+          Save Changes
         </button>
       </form>
 
@@ -164,10 +169,12 @@
 
   <script>
     let currentDeviceId = "";
+    let currentPasscode = "";
 
     document.getElementById("searchForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const devId = document.getElementById("search_device_id").value.trim();
+      const passcode = document.getElementById("search_passcode").value.trim();
       const errBox = document.getElementById("searchError");
       const viewCard = document.getElementById("profileViewCard");
       const editForm = document.getElementById("editForm");
@@ -177,10 +184,16 @@
       editForm.classList.add("hidden");
 
       try {
-        const res = await fetch(`/api/profile/${devId}`);
+        const res = await fetch(`/api/profile/${devId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passcode: passcode })
+        });
+
         if (res.ok) {
           const data = await res.json();
           currentDeviceId = data.device_id;
+          currentPasscode = passcode;
 
           document.getElementById("display_device_id").textContent = data.device_id;
           document.getElementById("display_name").textContent = data.name;
@@ -224,6 +237,7 @@
       statusBox.classList.add("hidden");
 
       const payload = {
+        passcode: currentPasscode,
         name: document.getElementById("edit_name").value.trim(),
         age: parseInt(document.getElementById("edit_age").value),
         blood_group: document.getElementById("edit_blood_group").value,
@@ -241,17 +255,17 @@
         });
 
         if (res.ok) {
-          statusBox.textContent = "Identity re-verified and profile updated!";
+          statusBox.textContent = "Profile updated securely!";
           statusBox.className = "text-xs text-emerald-400 block font-semibold";
           
           setTimeout(() => location.reload(), 1000);
         } else {
           const errData = await res.json().catch(() => ({}));
-          statusBox.textContent = errData.detail || "Validation failed.";
+          statusBox.textContent = errData.detail || "Update failed.";
           statusBox.className = "text-xs text-red-400 block";
         }
       } catch (err) {
-        statusBox.textContent = "Server communication error.";
+        statusBox.textContent = "Server error.";
         statusBox.className = "text-xs text-red-400 block";
       }
     });
