@@ -1,42 +1,58 @@
-import json
+import os
+from datetime import datetime
 from typing import List
-from fastapi import FastAPI, Depends, Form, WebSocket, WebSocketDisconnect, HTTPException
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, Form, HTTPException, status, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 
-from app.database import init_db, get_db, VictimProfile, IncidentLog
+# -------------------------------------------------------------------
+# Database Setup
+# -------------------------------------------------------------------
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rescuelink.db")
 
-app = FastAPI(title="RescueLink System")
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-# Mount static directory for CSS, JS, and static assets
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+class Profile(Base):
+    __tablename__ = "profiles"
+    device_id = Column(String, primary_key=True)
+    name = Column(String)
+    age = Column(Integer)
+    blood_group = Column(String)
+    medical_conditions = Column(String)
+    emergency_contact = Column(String)
 
+class Alert(Base):
+    __tablename__ = "alerts"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    device_id = Column(String, ForeignKey("profiles.device_id"))
+    trigger_type = Column(String)  # "manual" or "auto_fall"
+    latitude = Column(String)
+    longitude = Column(String)
+    status = Column(String, default="new")
+    received_at = Column(DateTime, default=datetime.utcnow)
 
-# Initialize database tables on application startup
-@app.on_event("startup")
-def startup_event():
-    init_db()
+Base.metadata.create_all(bind=engine)
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# Helper function to serve HTML files without browser caching glitches
-def render_no_cache(filepath: str) -> Response:
-    with open(filepath, "r", encoding="utf-8") as f:
-        content = f.read()
-    return Response(
-        content=content,
-        media_type="text/html",
-        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-    )
-
-
-# -----------------------------------------------------------------------------
-# WebSocket Connection Manager for Real-Time Telemetry Broadcasting
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------
+# WebSocket Connection Manager
+# -------------------------------------------------------------------
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -49,124 +65,121 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: dict):
         for connection in self.active_connections:
             try:
-                await connection.send_text(message)
+                await connection.send_json(message)
             except Exception:
                 pass
 
-
 manager = ConnectionManager()
 
+# -------------------------------------------------------------------
+# FastAPI Application & Routes
+# -------------------------------------------------------------------
+app = FastAPI(title="RescueLink")
 
-# -----------------------------------------------------------------------------
-# Frontend Page Routes (No-Cache Headers Applied)
-# -----------------------------------------------------------------------------
+# Serve Static Files
+os.makedirs("app/static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 @app.get("/", response_class=HTMLResponse)
 @app.get("/dashboard", response_class=HTMLResponse)
-async def read_dashboard():
-    return render_no_cache("app/static/dashboard.html")
-
+async def serve_dashboard():
+    with open("app/static/dashboard.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 @app.get("/registration", response_class=HTMLResponse)
-async def read_registration():
-    return render_no_cache("app/static/registration.html")
+async def serve_registration():
+    with open("app/static/registration.html", "r", encoding="utf-8") as f:
+        return f.read()
 
+# -------------------------------------------------------------------
+# API Endpoints
+# -------------------------------------------------------------------
+@app.post("/api/login")
+async def responder_login(username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "rescue123":
+        return JSONResponse(content={"status": "success", "message": "Authenticated"})
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid responder credentials"
+    )
 
-@app.get("/profile", response_class=HTMLResponse)
-async def read_profile():
-    return render_no_cache("app/static/profile.html")
-
-
-# -----------------------------------------------------------------------------
-# API Endpoints & Registration Handler
-# -----------------------------------------------------------------------------
 @app.post("/api/register")
-async def register_victim(
-    device_id: str = Form(...),
-    victim_name: str = Form(...),
-    blood_group: str = Form("O+"),
-    critical_allergies: str = Form("None"),
-    emergency_contact: str = Form(...),
+async def register_node(
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    existing = db.query(VictimProfile).filter(VictimProfile.device_id == device_id).first()
-    if existing:
-        existing.victim_name = victim_name
-        existing.blood_group = blood_group
-        existing.critical_allergies = critical_allergies
-        existing.emergency_contact = emergency_contact
+    content_type = request.headers.get("content-type", "")
+    
+    if "application/json" in content_type:
+        data = await request.json()
+        device_id = data.get("device_id")
+        name = data.get("name") or data.get("victim_name")
+        age = int(data.get("age", 0))
+        blood_group = data.get("blood_group")
+        medical_conditions = data.get("medical_conditions") or data.get("critical_allergies")
+        emergency_contact = data.get("emergency_contact")
     else:
-        new_profile = VictimProfile(
+        form = await request.form()
+        device_id = form.get("device_id")
+        name = form.get("name") or form.get("victim_name")
+        age = int(form.get("age", 0)) if form.get("age") else 0
+        blood_group = form.get("blood_group")
+        medical_conditions = form.get("medical_conditions") or form.get("critical_allergies")
+        emergency_contact = form.get("emergency_contact")
+
+    if not device_id or not name:
+        raise HTTPException(status_code=400, detail="Missing required fields: device_id and name.")
+
+    profile = db.query(Profile).filter(Profile.device_id == device_id).first()
+    if profile:
+        profile.name = name
+        profile.age = age
+        profile.blood_group = blood_group
+        profile.medical_conditions = medical_conditions
+        profile.emergency_contact = emergency_contact
+    else:
+        profile = Profile(
             device_id=device_id,
-            victim_name=victim_name,
+            name=name,
+            age=age,
             blood_group=blood_group,
-            critical_allergies=critical_allergies,
+            medical_conditions=medical_conditions,
             emergency_contact=emergency_contact
         )
-        db.add(new_profile)
-    
+        db.add(profile)
+
     db.commit()
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return JSONResponse(content={"status": "success", "device_id": device_id})
 
+@app.get("/api/alerts")
+async def get_alerts(db: Session = Depends(get_db)):
+    alerts = db.query(Alert).order_by(Alert.received_at.desc()).all()
+    results = []
+    for alert in alerts:
+        profile = db.query(Profile).filter(Profile.device_id == alert.device_id).first()
+        results.append({
+            "id": alert.id,
+            "device_id": alert.device_id,
+            "trigger_type": alert.trigger_type,
+            "latitude": alert.latitude,
+            "longitude": alert.longitude,
+            "status": alert.status,
+            "received_at": alert.received_at.isoformat() if alert.received_at else None,
+            "name": profile.name if profile else "Unknown User",
+            "blood_group": profile.blood_group if profile else "N/A",
+            "medical_conditions": profile.medical_conditions if profile else "None",
+            "emergency_contact": profile.emergency_contact if profile else "N/A"
+        })
+    return results
 
-@app.get("/api/profile/{device_id}")
-async def get_victim_profile(device_id: str, db: Session = Depends(get_db)):
-    profile = db.query(VictimProfile).filter(VictimProfile.device_id == device_id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
-
-
-@app.post("/api/telemetry")
-async def receive_telemetry(payload: dict, db: Session = Depends(get_db)):
-    """
-    HTTP POST endpoint for hardware nodes (ESP32 / LoRa gateway) or simulation scripts.
-    It links incoming telemetry to registered database profiles and broadcasts live alerts.
-    """
-    device_id = payload.get("device_id", "UNKNOWN")
-    latitude = payload.get("latitude", 0.0)
-    longitude = payload.get("longitude", 0.0)
-    sos_triggered = payload.get("sos_triggered", False)
-
-    # 1. Save Incident to Database
-    incident = IncidentLog(
-        device_id=device_id,
-        latitude=str(latitude),
-        longitude=str(longitude),
-        sos_triggered=sos_triggered
-    )
-    db.add(incident)
-    db.commit()
-
-    # 2. Enrich with Victim Profile from DB if available
-    profile = db.query(VictimProfile).filter(VictimProfile.device_id == device_id).first()
-    enriched_data = {
-        "device_id": device_id,
-        "latitude": latitude,
-        "longitude": longitude,
-        "sos_triggered": sos_triggered,
-        "victim_name": profile.victim_name if profile else "Unregistered Node",
-        "blood_group": profile.blood_group if profile else "N/A",
-        "critical_allergies": profile.critical_allergies if profile else "None",
-        "emergency_contact": profile.emergency_contact if profile else "N/A"
-    }
-
-    # 3. Broadcast to all active WebSocket connected dashboards
-    await manager.broadcast(json.dumps(enriched_data))
-    return {"status": "success", "data": enriched_data}
-
-
-# -----------------------------------------------------------------------------
-# WebSocket Stream Endpoint
-# -----------------------------------------------------------------------------
 @app.websocket("/ws/alerts")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_alerts(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
-            await manager.broadcast(data)
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)

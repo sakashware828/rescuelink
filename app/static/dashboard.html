@@ -11,7 +11,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
 
-  <!-- Responder Login Gate -->
+  <!-- Responder Authentication Gate Modal -->
   <div id="loginModal" class="fixed inset-0 bg-slate-950/90 z-[9999] flex items-center justify-center p-4">
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
       <div class="flex items-center space-x-3 mb-4 border-b border-slate-700 pb-3">
@@ -29,7 +29,7 @@
           <label class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
           <input type="password" id="password" value="rescue123" required class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:outline-none focus:border-red-500">
         </div>
-        <div id="loginError" class="text-red-500 text-xs hidden">Invalid credentials. Access denied.</div>
+        <div id="loginError" class="text-red-500 text-xs hidden">Invalid responder credentials. Access denied.</div>
         <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded text-sm transition">Authenticate</button>
       </form>
     </div>
@@ -49,10 +49,10 @@
     </div>
   </nav>
 
-  <!-- Dashboard Grid Container -->
+  <!-- Dashboard Grid View -->
   <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
     
-    <!-- Real-Time Alert Feed Panel -->
+    <!-- Real-Time Feed Panel -->
     <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 flex flex-col h-[calc(100vh-100px)]">
       <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-3">
         <h3 class="font-bold text-slate-200 text-sm tracking-wide">Live Emergency Feed</h3>
@@ -71,7 +71,7 @@
   </div>
 
   <script>
-    // Authentication Logic
+    // Server-Side Verification Auth Flow
     function checkAuth() {
       if (sessionStorage.getItem("authenticated") === "true") {
         document.getElementById("loginModal").classList.add("hidden");
@@ -79,16 +79,30 @@
       }
     }
 
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const u = document.getElementById("username").value;
-      const p = document.getElementById("password").value;
       
-      if (u === "admin" && p === "rescue123") {
-        sessionStorage.setItem("authenticated", "true");
-        document.getElementById("loginModal").classList.add("hidden");
-        loadRealTimeData();
-      } else {
+      const params = new URLSearchParams();
+      params.append("username", document.getElementById("username").value.trim());
+      params.append("password", document.getElementById("password").value.trim());
+
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params
+        });
+
+        if (res.ok) {
+          sessionStorage.setItem("authenticated", "true");
+          document.getElementById("loginModal").classList.add("hidden");
+          document.getElementById("loginError").classList.add("hidden");
+          loadRealTimeData();
+        } else {
+          document.getElementById("loginError").classList.remove("hidden");
+        }
+      } catch (err) {
+        console.error("Auth server error:", err);
         document.getElementById("loginError").classList.remove("hidden");
       }
     });
@@ -98,7 +112,7 @@
       location.reload();
     }
 
-    // Leaflet Map Initialization
+    // Leaflet Map Setup
     const map = L.map('map').setView([19.0760, 72.8777], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -107,7 +121,7 @@
     let alertsStore = [];
     const markers = {};
 
-    // Priority Sort: Manual SOS triggers first, then newest timestamp
+    // Priority Sort Algorithm: Manual triggers first, then newest timestamp
     function sortAlerts(alerts) {
       return alerts.sort((a, b) => {
         if (a.trigger_type === 'manual' && b.trigger_type !== 'manual') return -1;
@@ -167,7 +181,7 @@
 
         feed.appendChild(card);
 
-        // Render Leaflet Map Markers dynamically
+        // Render Leaflet Map Markers
         if (alert.latitude && alert.longitude && !markers[alert.device_id]) {
           const marker = L.marker([parseFloat(alert.latitude), parseFloat(alert.longitude)])
             .addTo(map)
@@ -177,7 +191,7 @@
       });
     }
 
-    // Fetch initial dynamic alerts registered in database
+    // Load DB dynamic data
     async function loadRealTimeData() {
       try {
         const res = await fetch('/api/alerts');
@@ -186,17 +200,16 @@
           renderFeed();
         }
       } catch (e) {
-        console.log("Fetching live alerts endpoint: listening for WebSocket events.");
+        console.log("Listening for incoming WebSocket events.");
       }
     }
 
-    // Real-Time WebSocket Listener for live ESP32 incoming payloads
+    // WebSocket Stream
     const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(`${wsScheme}://${window.location.host}/ws/alerts`);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // Remove previous entry for same device to update real-time state
       alertsStore = alertsStore.filter(a => a.device_id !== data.device_id);
       alertsStore.unshift(data);
       renderFeed();
