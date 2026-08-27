@@ -1,159 +1,342 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RescueLink — Node Registration & Security Setup</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans overflow-x-hidden">
-
-  <nav class="bg-slate-800 border-b border-slate-700 px-6 py-3 flex justify-between items-center shadow-md">
-    <div class="flex items-center space-x-3">
-      <div class="bg-red-600 p-2 rounded-lg text-white font-black text-sm tracking-wider">RL</div>
-      <span class="font-bold text-xl tracking-wide text-red-500 uppercase">RescueLink <span class="text-xs text-slate-400 lowercase font-normal">Registration</span></span>
-    </div>
-    <div class="flex space-x-4 text-sm font-semibold">
-      <a href="/dashboard" class="text-slate-400 hover:text-white transition">Dashboard</a>
-      <a href="/registration" class="text-red-400 border-b-2 border-red-500 pb-0.5">Registration</a>
-      <a href="/profile" class="text-slate-400 hover:text-white transition">Profile</a>
-    </div>
-  </nav>
-
-  <div class="flex-1 flex justify-center items-center p-6">
-    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-8 max-w-lg w-full shadow-2xl">
-      
-      <div class="border-b border-slate-700 pb-4 mb-4">
-        <h2 class="text-xl font-bold text-slate-100 flex items-center">
-          <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-          </svg>
-          Secure Hardware Registration
-        </h2>
-        <p class="text-xs text-slate-400 mt-1">Bind your hardware node to a secure passcode and verified ID to block unauthorized access.</p>
-      </div>
-
-      <form id="regForm" class="space-y-4 text-sm">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Hardware Device ID <span class="text-red-500">*</span></label>
-            <input type="text" id="device_id" placeholder="e.g. ESP32_NODE_1" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
-          </div>
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Device Passcode <span class="text-red-500">*</span></label>
-            <input type="password" id="passcode" placeholder="Set a secret PIN/Password" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="md:col-span-2">
-            <label class="block text-slate-300 font-semibold mb-1">Full Name (As per Govt ID) <span class="text-red-500">*</span></label>
-            <input type="text" id="name" placeholder="Full Name" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
-          </div>
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Age <span class="text-red-500">*</span></label>
-            <input type="number" id="age" placeholder="Age" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
-          </div>
-        </div>
-
-        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/80 space-y-3">
-          <span class="text-xs font-bold text-red-400 uppercase tracking-wide block">🔒 Identity Verification</span>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-slate-300 font-semibold text-xs mb-1">ID Document Type</label>
-              <select id="govt_id_type" required class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 text-xs">
-                <option value="Aadhaar">Aadhaar Card (12 Digits)</option>
-                <option value="PAN">PAN Card</option>
-                <option value="Passport">Passport</option>
-                <option value="Driver License">Driver's License</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-slate-300 font-semibold text-xs mb-1">ID Number <span class="text-red-500">*</span></label>
-              <input type="text" id="govt_id_number" placeholder="Enter ID Number" required 
-                class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 text-xs focus:border-red-500 focus:outline-none">
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Blood Group <span class="text-red-500">*</span></label>
-            <select id="blood_group" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-red-500 transition">
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-slate-300 font-semibold mb-1">Emergency Contact <span class="text-red-500">*</span></label>
-            <input type="tel" id="emergency_contact" placeholder="+91 9876543210" required 
-              class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-slate-300 font-semibold mb-1">Medical Conditions / Allergies</label>
-          <textarea id="medical_conditions" placeholder="e.g. Asthma, Penicillin allergy..." 
-            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-red-500 transition h-20 resize-none"></textarea>
-        </div>
-
-        <button type="submit" id="submitBtn"
-          class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition duration-200 shadow-lg shadow-red-600/30 mt-2 flex items-center justify-center space-x-2">
-          <span id="btnText">Secure & Register Node</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    document.getElementById("regForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const btnText = document.getElementById("btnText");
-      btnText.textContent = "Encrypting & Registering...";
-
-      const params = new URLSearchParams();
-      params.append("device_id", document.getElementById("device_id").value.trim());
-      params.append("passcode", document.getElementById("passcode").value.trim());
-      params.append("name", document.getElementById("name").value.trim());
-      params.append("age", document.getElementById("age").value);
-      params.append("blood_group", document.getElementById("blood_group").value);
-      params.append("emergency_contact", document.getElementById("emergency_contact").value.trim());
-      params.append("medical_conditions", document.getElementById("medical_conditions").value.trim());
-      params.append("govt_id_type", document.getElementById("govt_id_type").value);
-      params.append("govt_id_number", document.getElementById("govt_id_number").value.trim());
-
-      try {
-        const res = await fetch("/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: params
-        });
-
-        if (res.ok) {
-          window.location.replace("/dashboard");
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          alert("Registration Failed: " + (errData.detail || "Error submitting form"));
-          btnText.textContent = "Secure & Register Node";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RescueLink - Profile Registration</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            font-family: Arial, sans-serif;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
         }
-      } catch (err) {
-        console.error("Registration error:", err);
-        alert("Server communication error.");
-        btnText.textContent = "Secure & Register Node";
-      }
-    });
-  </script>
+
+        .card {
+            background-color: #1e293b;
+            border-radius: 8px;
+            padding: 24px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #ffffff;
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+        }
+
+        /* Mandatory Asterisk Style */
+        .required-asterisk {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        /* Password Wrapper for Show/Hide Button positioning */
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-container input {
+            width: 100%;
+            padding-right: 40px; /* Space for toggle button */
+            box-sizing: border-box;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            margin: 0;
+            width: auto;
+        }
+
+        .toggle-password:hover {
+            color: #3b82f6;
+            opacity: 1;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: #3b82f6;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #64748b;
+        }
+
+        .error-message {
+            color: #f87171;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-auth {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+
+        .btn-submit {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="width: 100%; max-width: 600px;">
+
+        <!-- Device Auth Card -->
+        <div class="card">
+            <h2>Device Authentication</h2>
+            <form id="authForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Device ID <span class="required-asterisk">*</span></label>
+                        <input type="text" placeholder="001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Passcode <span class="required-asterisk">*</span></label>
+                        <div class="password-container">
+                            <input type="password" id="authPasscode" placeholder="Passcode" required>
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('authPasscode', this)">👁️</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn-auth">Authenticate & Fetch Data</button>
+            </form>
+        </div>
+
+        <!-- Profile Details Card -->
+        <div class="card">
+            <h2>📝 Profile Metadata Details</h2>
+            <form id="profileForm" onsubmit="handleSave(event)">
+                <div class="form-grid">
+                    
+                    <div class="form-group">
+                        <label>Device ID <span class="required-asterisk">*</span></label>
+                        <input type="text" id="deviceId" placeholder="001" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Set Passcode <span class="required-asterisk">*</span></label>
+                        <div class="password-container">
+                            <input type="password" id="passcode" required>
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('passcode', this)">👁️</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Full Name <span class="required-asterisk">*</span></label>
+                        <input type="text" id="fullName" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Age <span class="required-asterisk">*</span></label>
+                        <input type="number" id="age" min="1" max="120" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Blood Group <span class="required-asterisk">*</span></label>
+                        <input type="text" id="bloodGroup" placeholder="e.g. B+" required>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Emergency Contact Number(+91) <span class="required-asterisk">*</span></label>
+                        <input type="tel" id="emergencyPhone" placeholder="Enter 10 digit phone number" required>
+                        <span id="phoneError" class="error-message">Phone number must contain exactly 10 digits (excluding country code).</span>
+                    </div>
+
+                    <!-- Govt ID Section -->
+                    <div class="form-group">
+                        <label>Govt ID Type <span class="required-asterisk">*</span></label>
+                        <select id="govtIdType" onchange="updateIdPlaceholder()" required>
+                            <option value="">Select ID Type</option>
+                            <option value="Aadhaar">Aadhaar</option>
+                            <option value="PAN">PAN</option>
+                            <option value="Passport">Passport</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Govt ID Number <span class="required-asterisk">*</span></label>
+                        <input type="text" id="govtIdNumber" placeholder="Enter ID number" required>
+                        <span id="govtIdError" class="error-message">Invalid Government ID format.</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Medical Conditions / Allergies</label>
+                        <textarea id="medicalConditions" rows="3" placeholder="None listed"></textarea>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="btn-submit">Save Hardware Profile</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈"; // Icon state when visible
+            } else {
+                input.type = "password";
+                btn.textContent = "👁️"; // Icon state when hidden
+            }
+        }
+
+        function updateIdPlaceholder() {
+            const idType = document.getElementById('govtIdType').value;
+            const idInput = document.getElementById('govtIdNumber');
+            
+            if (idType === "Aadhaar") {
+                idInput.placeholder = "Enter 12-digit Aadhaar number";
+            } else if (idType === "PAN") {
+                idInput.placeholder = "Enter 10-character PAN (e.g. ABCDE1234F)";
+            } else if (idType === "Passport") {
+                idInput.placeholder = "Enter 8-character Passport (e.g. A1234567)";
+            } else {
+                idInput.placeholder = "Enter ID number";
+            }
+        }
+
+        function validatePhoneNumber(phoneInput) {
+            const digitsOnly = phoneInput.replace(/\D/g, '');
+            let coreDigits = digitsOnly;
+            if (digitsOnly.length > 10) {
+                coreDigits = digitsOnly.slice(-10);
+            }
+            return coreDigits.length === 10;
+        }
+
+        function validateGovtID(idType, idNumber) {
+            const cleanId = idNumber.trim().toUpperCase();
+
+            if (idType === "Aadhaar") {
+                // Aadhaar: Exactly 12 digits (ignoring optional spaces/hyphens)
+                const digitsOnly = cleanId.replace(/\D/g, '');
+                return digitsOnly.length === 12 && cleanId.replace(/[\s-]/g, '').length === 12;
+            } else if (idType === "PAN") {
+                // PAN Card: Standard 10 alphanumeric characters format (5 letters, 4 numbers, 1 letter)
+                const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+                return panRegex.test(cleanId);
+            } else if (idType === "Passport") {
+                // Passport: 8 characters total (1 letter followed by 7 numbers)
+                const passportRegex = /^[A-Z]{1}[0-9]{7}$/;
+                return passportRegex.test(cleanId);
+            }
+            return false;
+        }
+
+        function handleSave(event) {
+            event.preventDefault();
+
+            const form = document.getElementById('profileForm');
+            const phoneInput = document.getElementById('emergencyPhone').value;
+            const phoneError = document.getElementById('phoneError');
+            
+            const idType = document.getElementById('govtIdType').value;
+            const idNumber = document.getElementById('govtIdNumber').value;
+            const govtIdError = document.getElementById('govtIdError');
+
+            let isValid = true;
+
+            // 1. Validate Phone Number
+            if (!validatePhoneNumber(phoneInput)) {
+                phoneError.style.display = 'block';
+                isValid = false;
+            } else {
+                phoneError.style.display = 'none';
+            }
+
+            // 2. Validate Government ID Format
+            if (!validateGovtID(idType, idNumber)) {
+                if (idType === "Aadhaar") {
+                    govtIdError.textContent = "Aadhaar number must contain exactly 12 digits.";
+                } else if (idType === "PAN") {
+                    govtIdError.textContent = "PAN must be 10 characters long (5 letters, 4 numbers, 1 letter).";
+                } else if (idType === "Passport") {
+                    govtIdError.textContent = "Passport must be 8 characters long (1 letter followed by 7 digits).";
+                } else {
+                    govtIdError.textContent = "Please select a valid Government ID Type.";
+                }
+                govtIdError.style.display = 'block';
+                isValid = false;
+            } else {
+                govtIdError.style.display = 'none';
+            }
+
+            // 3. Validate overall form completeness
+            if (!form.checkValidity() || !isValid) {
+                form.reportValidity();
+                return;
+            }
+
+            alert("Hardware Profile details validated and saved successfully!");
+        }
+    </script>
 </body>
 </html>
