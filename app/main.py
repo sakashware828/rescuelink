@@ -135,7 +135,32 @@ app.add_middleware(
 )
 
 # ----------------------------------------------------
-# 5. API ENDPOINTS
+# 5. HTML PAGE ROUTES (restored — these were accidentally dropped before)
+# ----------------------------------------------------
+def serve_html(filename: str):
+    path = BASE_DIR / "static" / filename
+    if path.exists():
+        return FileResponse(path)
+    return HTMLResponse(content=f"<h3>Error: {filename} not found on server</h3>", status_code=404)
+
+@app.get("/")
+def read_root():
+    return serve_html("registration.html")
+
+@app.get("/registration")
+def read_registration():
+    return serve_html("registration.html")
+
+@app.get("/dashboard")
+def read_dashboard():
+    return serve_html("dashboard.html")
+
+@app.get("/profile")
+def read_profile():
+    return serve_html("profile.html")
+
+# ----------------------------------------------------
+# 6. API ENDPOINTS
 # ----------------------------------------------------
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
