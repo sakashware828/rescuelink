@@ -1,330 +1,104 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RescueLink - Profile Registration</title>
-    <style>
-        body {
-            background-color: #0f172a;
-            font-family: Arial, sans-serif;
-            color: #f8fafc;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            btn.textContent = "🙈";
+        } else {
+            input.type = "password";
+            btn.textContent = "👁️";
         }
+    }
 
-        .card {
-            background-color: #1e293b;
-            border-radius: 8px;
-            padding: 24px;
-            width: 100%;
-            max-width: 600px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
+    function validatePhoneNumber(phoneInput) {
+        const digitsOnly = phoneInput.replace(/\D/g, '');
+        let coreDigits = digitsOnly;
+        if (digitsOnly.length > 10) {
+            coreDigits = digitsOnly.slice(-10);
         }
+        return coreDigits.length === 10;
+    }
 
-        h2 {
-            color: #ffffff;
-            font-size: 1.25rem;
-            margin-bottom: 16px;
-        }
+    async function handleAuth(event) {
+        event.preventDefault();
+        const device_id = document.getElementById('authDeviceId').value.trim();
+        const passcode = document.getElementById('authPasscode').value;
 
-        /* Mandatory Asterisk Style */
-        .required-asterisk {
-            color: #ef4444;
-            margin-left: 2px;
-        }
+        try {
+            const response = await fetch('/api/lookup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device_id, passcode })
+            });
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 12px;
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
-
-        label {
-            color: #cbd5e1;
-            font-size: 0.9rem;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        input, select, textarea {
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            padding: 10px;
-            color: #ffffff;
-            font-size: 0.95rem;
-            outline: none;
-        }
-
-        /* Password Wrapper for Show/Hide Button positioning */
-        .password-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-container input {
-            width: 100%;
-            padding-right: 40px; /* Space for toggle button */
-            box-sizing: border-box;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0;
-            margin: 0;
-            width: auto;
-        }
-
-        .toggle-password:hover {
-            color: #3b82f6;
-            opacity: 1;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: #3b82f6;
-        }
-
-        input::placeholder, textarea::placeholder {
-            color: #64748b;
-        }
-
-        .error-message {
-            color: #f87171;
-            font-size: 0.8rem;
-            margin-top: 4px;
-            display: none;
-        }
-
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .btn-auth {
-            background-color: #ef4444;
-            color: #ffffff;
-        }
-
-        .btn-submit {
-            background-color: #10b981;
-            color: #ffffff;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-    </style>
-</head>
-<body>
-
-    <div style="width: 100%; max-width: 600px;">
-
-        <!-- Device Auth Card -->
-        <div class="card">
-            <h2>Device Authentication</h2>
-            <form id="authForm" onsubmit="handleAuth(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Device ID <span class="required-asterisk">*</span></label>
-                        <input type="text" id="authDeviceId" placeholder="001" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Passcode <span class="required-asterisk">*</span></label>
-                        <div class="password-container">
-                            <input type="password" id="authPasscode" placeholder="Passcode" required>
-                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('authPasscode', this)">👁️</button>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="btn-auth">Authenticate & Fetch Data</button>
-            </form>
-        </div>
-
-        <!-- Profile Details Card -->
-        <div class="card">
-            <h2>📝 Profile Metadata Details</h2>
-            <form id="profileForm" onsubmit="handleSave(event)">
-                <div class="form-grid">
-                    
-                    <div class="form-group">
-                        <label>Device ID <span class="required-asterisk">*</span></label>
-                        <input type="text" id="deviceId" placeholder="001" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Set Passcode <span class="required-asterisk">*</span></label>
-                        <div class="password-container">
-                            <input type="password" id="passcode" required>
-                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('passcode', this)">👁️</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Full Name <span class="required-asterisk">*</span></label>
-                        <input type="text" id="fullName" placeholder="John Doe" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Age <span class="required-asterisk">*</span></label>
-                        <input type="number" id="age" min="1" max="120" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Blood Group <span class="required-asterisk">*</span></label>
-                        <input type="text" id="bloodGroup" placeholder="e.g. B+" required>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Emergency Contact Number(+91) <span class="required-asterisk">*</span></label>
-                        <input type="tel" id="emergencyPhone" placeholder="Enter 10 digit phone number" required>
-                        <span id="phoneError" class="error-message">Phone number must contain exactly 10 digits (excluding country code).</span>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Medical Conditions / Allergies</label>
-                        <textarea id="medicalConditions" rows="3" placeholder="None listed"></textarea>
-                    </div>
-
-                </div>
-
-                <button type="submit" class="btn-submit">Save Hardware Profile</button>
-            </form>
-        </div>
-
-    </div>
-
-    <script>
-        function togglePasswordVisibility(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (input.type === "password") {
-                input.type = "text";
-                btn.textContent = "🙈";
+            if (response.ok) {
+                const data = await response.json();
+                
+                document.getElementById('deviceId').value = device_id;
+                document.getElementById('passcode').value = passcode;
+                document.getElementById('fullName').value = data.name || '';
+                document.getElementById('age').value = data.age || '';
+                document.getElementById('bloodGroup').value = data.blood_group || '';
+                document.getElementById('emergencyPhone').value = data.emergency_contact || '';
+                document.getElementById('medicalConditions').value = data.medical_conditions || '';
+                
+                alert("Profile loaded successfully!");
             } else {
-                input.type = "password";
-                btn.textContent = "👁️";
+                const err = await response.json();
+                alert("Authentication failed: " + (err.detail || "Invalid credentials"));
             }
+        } catch (error) {
+            alert("Error connecting to server.");
+        }
+    }
+
+    async function handleSave(event) {
+        event.preventDefault();
+
+        const form = document.getElementById('profileForm');
+        const phoneInput = document.getElementById('emergencyPhone').value;
+        const phoneError = document.getElementById('phoneError');
+
+        let isValid = true;
+
+        if (!validatePhoneNumber(phoneInput)) {
+            phoneError.style.display = 'block';
+            isValid = false;
+        } else {
+            phoneError.style.display = 'none';
         }
 
-        function validatePhoneNumber(phoneInput) {
-            const digitsOnly = phoneInput.replace(/\D/g, '');
-            let coreDigits = digitsOnly;
-            if (digitsOnly.length > 10) {
-                coreDigits = digitsOnly.slice(-10);
-            }
-            return coreDigits.length === 10;
+        if (!form.checkValidity() || !isValid) {
+            form.reportValidity();
+            return;
         }
 
-        async function handleAuth(event) {
-            event.preventDefault();
-            const device_id = document.getElementById('authDeviceId').value.trim();
-            const passcode = document.getElementById('authPasscode').value;
+        // Keys changed to match main.py ProfileCreate schema ('name' & 'emergency_contact')
+        const payload = {
+            device_id: document.getElementById('deviceId').value.trim(),
+            passcode: document.getElementById('passcode').value,
+            name: document.getElementById('fullName').value.trim(),
+            age: parseInt(document.getElementById('age').value, 10),
+            blood_group: document.getElementById('bloodGroup').value.trim(),
+            emergency_contact: document.getElementById('emergencyPhone').value.trim(),
+            medical_conditions: document.getElementById('medicalConditions').value.trim() || "None listed"
+        };
 
-            try {
-                const response = await fetch('/api/lookup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ device_id, passcode })
-                });
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Autofill profile form fields
-                    document.getElementById('deviceId').value = device_id;
-                    document.getElementById('passcode').value = passcode;
-                    document.getElementById('fullName').value = data.name || '';
-                    document.getElementById('age').value = data.age || '';
-                    document.getElementById('bloodGroup').value = data.blood_group || '';
-                    document.getElementById('emergencyPhone').value = data.emergency_contact || '';
-                    document.getElementById('medicalConditions').value = data.medical_conditions || '';
-                    
-                    alert("Profile loaded successfully!");
-                } else {
-                    const err = await response.json();
-                    alert("Authentication failed: " + (err.detail || "Invalid credentials"));
-                }
-            } catch (error) {
-                alert("Error connecting to server.");
-            }
-        }
-
-        async function handleSave(event) {
-            event.preventDefault();
-
-            const form = document.getElementById('profileForm');
-            const phoneInput = document.getElementById('emergencyPhone').value;
-            const phoneError = document.getElementById('phoneError');
-
-            let isValid = true;
-
-            // Validate Phone Number
-            if (!validatePhoneNumber(phoneInput)) {
-                phoneError.style.display = 'block';
-                isValid = false;
+            if (response.ok) {
+                alert("Hardware Profile registered successfully!");
             } else {
-                phoneError.style.display = 'none';
+                const err = await response.json();
+                alert("Registration failed: " + (err.detail || "Unknown error"));
             }
-
-            // Validate overall form completeness
-            if (!form.checkValidity() || !isValid) {
-                form.reportValidity();
-                return;
-            }
-
-            // Construct payload matching backend specification
-            const payload = {
-                device_id: document.getElementById('deviceId').value.trim(),
-                passcode: document.getElementById('passcode').value,
-                name: document.getElementById('fullName').value.trim(),
-                age: parseInt(document.getElementById('age').value, 10),
-                blood_group: document.getElementById('bloodGroup').value.trim(),
-                emergency_contact: document.getElementById('emergencyPhone').value.trim(),
-                medical_conditions: document.getElementById('medicalConditions').value.trim() || "None listed"
-            };
-
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    alert("Hardware Profile registered successfully!");
-                } else {
-                    const err = await response.json();
-                    alert("Registration failed: " + (err.detail || "Unknown error"));
-                }
-            } catch (error) {
-                alert("Network error: Could not save profile.");
-            }
+        } catch (error) {
+            alert("Network error: Could not save profile.");
         }
-    </script>
-</body>
-</html>
+    }
+</script>
