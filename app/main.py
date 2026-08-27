@@ -3,10 +3,10 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, inspect, text
 from sqlalchemy.orm import Session
 
 from app.database import engine, Base, get_db
@@ -37,6 +37,31 @@ class Alert(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 Base.metadata.create_all(bind=engine)
+
+
+# ----------------------------------------------------
+# 1a. STARTUP MIGRATION (self-heals a stale/old schema, like the bug we hit)
+# ----------------------------------------------------
+def run_startup_migrations():
+    inspector = inspect(engine)
+
+    if "alerts" not in inspector.get_table_names():
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("alerts")}
+
+    if "trigger_type" not in existing_columns:
+        print("Migration: 'alerts' table missing trigger_type column — adding it now.")
+        with engine.connect() as conn:
+            conn.execute(text(
+                "ALTER TABLE alerts ADD COLUMN trigger_type VARCHAR DEFAULT 'manual'"
+            ))
+            conn.commit()
+        print("Migration: trigger_type column added successfully.")
+    else:
+        print("Migration check: alerts table schema is up to date.")
+
+run_startup_migrations()
 
 # ----------------------------------------------------
 # 2. PYDANTIC SCHEMAS
@@ -99,7 +124,7 @@ manager = ConnectionManager()
 # ----------------------------------------------------
 # 4. FASTAPI APP INITIALIZATION
 # ----------------------------------------------------
-app = FastAPI(title="RescueLink API", version="1.1.0")
+app = FastAPI(title="RescueLink API", version="1.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -110,36 +135,7 @@ app.add_middleware(
 )
 
 # ----------------------------------------------------
-# 5. HTML PAGE ROUTING (Fixes 404 Page Loading Issues)
-# ----------------------------------------------------
-# Adjust path lookup depending on whether files live in app/static or app/templates
-def get_html_path(filename: str) -> Path:
-    static_path = BASE_DIR / "static" / filename
-    templates_path = BASE_DIR / "templates" / filename
-    if static_path.exists():
-        return static_path
-    elif templates_path.exists():
-        return templates_path
-    return BASE_DIR / filename
-
-@app.get("/")
-def read_root():
-    return FileResponse(get_html_path("registration.html"))
-
-@app.get("/registration")
-def read_registration():
-    return FileResponse(get_html_path("registration.html"))
-
-@app.get("/dashboard")
-def read_dashboard():
-    return FileResponse(get_html_path("dashboard.html"))
-
-@app.get("/profile")
-def read_profile():
-    return FileResponse(get_html_path("profile.html"))
-
-# ----------------------------------------------------
-# 6. API ENDPOINTS
+# 5. API ENDPOINTS
 # ----------------------------------------------------
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
@@ -165,11 +161,8 @@ def lookup_profile(req: LookupRequest, db: Session = Depends(get_db)):
     if not profile:
         raise HTTPException(status_code=401, detail="Invalid device ID or passcode")
     return {
-        "device_id": profile.device_id,
-        "name": profile.name,
-        "age": profile.age,
-        "blood_group": profile.blood_group,
-        "emergency_contact": profile.emergency_contact,
+        "device_id": profile.device_id, "name": profile.name, "age": profile.age,
+        "blood_group": profile.blood_group, "emergency_contact": profile.emergency_contact,
         "medical_conditions": profile.medical_conditions,
     }
 
@@ -214,3 +207,10 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+# ----------------------------------------------------
+# 6. STATIC FILES MOUNT (Keep at bottom)
+# ----------------------------------------------------
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

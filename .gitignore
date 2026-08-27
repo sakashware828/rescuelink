@@ -1,10 +1,8 @@
-__pycache__/
-*.pyc
-.env
-venv/
-.vscode/
-.idea/-e "
-*.db
-*.sqlite3
-__pycache__/
-*.pyc" 
+   __pycache__/
+   *.pyc
+   .env
+   venv/
+   .vscode/
+   .idea/
+   *.db
+   *.sqlite3
