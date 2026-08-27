@@ -1,241 +1,88 @@
-from pathlib import Path
-from datetime import datetime
-from typing import List, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
+import os
+from typing import Optional
+from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, DateTime, inspect, text
-from sqlalchemy.orm import Session
 
-from app.database import engine, Base, get_db
+app = FastAPI(title="RescueLink API")
 
-BASE_DIR = Path(__file__).resolve().parent
-
-# ----------------------------------------------------
-# 1. DATABASE MODELS
-# ----------------------------------------------------
-class Profile(Base):
-    __tablename__ = "profiles"
-    device_id = Column(String, primary_key=True, index=True)
-    passcode = Column(String, nullable=False)
-    name = Column(String, nullable=False)
-    age = Column(Integer)
-    blood_group = Column(String)
-    emergency_contact = Column(String)
-    medical_conditions = Column(String, default="None listed")
-
-class Alert(Base):
-    __tablename__ = "alerts"
-    id = Column(Integer, primary_key=True, index=True)
-    device_id = Column(String, index=True)
-    trigger_type = Column(String, default="manual")
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    status = Column(String, default="Active")
-    timestamp = Column(DateTime, default=datetime.utcnow)
-
-Base.metadata.create_all(bind=engine)
+# Mount static files directory if you have local CSS/JS/Image assets
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# ----------------------------------------------------
-# 1a. STARTUP MIGRATION (self-heals a stale/old schema, like the bug we hit)
-# ----------------------------------------------------
-def run_startup_migrations():
-    inspector = inspect(engine)
+# --- Data Models ---
 
-    if "alerts" not in inspector.get_table_names():
-        return
+class LookupRequest(BaseModel):
+    device_id: str
+    passcode: str
 
-    existing_columns = {col["name"] for col in inspector.get_columns("alerts")}
-
-    if "trigger_type" not in existing_columns:
-        print("Migration: 'alerts' table missing trigger_type column — adding it now.")
-        with engine.connect() as conn:
-            conn.execute(text(
-                "ALTER TABLE alerts ADD COLUMN trigger_type VARCHAR DEFAULT 'manual'"
-            ))
-            conn.commit()
-        print("Migration: trigger_type column added successfully.")
-    else:
-        print("Migration check: alerts table schema is up to date.")
-
-run_startup_migrations()
-
-# ----------------------------------------------------
-# 2. PYDANTIC SCHEMAS
-# ----------------------------------------------------
-class ProfileCreate(BaseModel):
+class ProfileRegistration(BaseModel):
     device_id: str
     passcode: str
     name: str
     age: int
     blood_group: str
     emergency_contact: str
+    govt_id_type: Optional[str] = "Aadhaar"
+    govt_id_number: Optional[str] = ""
     medical_conditions: Optional[str] = "None listed"
 
-class LookupRequest(BaseModel):
-    device_id: str
-    passcode: str
 
-class AlertCreate(BaseModel):
-    device_id: str
-    trigger_type: str = "manual"
-    latitude: float
-    longitude: float
+# --- HTML Page Routes ---
 
-class AlertResponse(BaseModel):
-    id: int
-    device_id: str
-    trigger_type: str
-    latitude: float
-    longitude: float
-    status: str
-    timestamp: datetime
+@app.get("/", response_class=HTMLResponse)
+@app.get("/register", response_class=HTMLResponse)
+@app.get("/profile", response_class=HTMLResponse)
+async def serve_profile_page():
+    """Serves the main profile registration/linker UI."""
+    file_path = os.path.join(os.path.dirname(__file__), "profile.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="profile.html file not found on server.")
+    return FileResponse(file_path)
 
-    class Config:
-        from_attributes = True
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard_page():
+    """Serves the responder operations dashboard UI."""
+    file_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="dashboard.html file not found on server.")
+    return FileResponse(file_path)
 
-# ----------------------------------------------------
-# 3. WEBSOCKET CONNECTION MANAGER
-# ----------------------------------------------------
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
+# --- REST API Endpoints ---
 
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        for connection in list(self.active_connections):
-            try:
-                await connection.send_json(message)
-            except Exception:
-                self.disconnect(connection)
-
-manager = ConnectionManager()
-
-# ----------------------------------------------------
-# 4. FASTAPI APP INITIALIZATION
-# ----------------------------------------------------
-app = FastAPI(title="RescueLink API", version="1.2.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ----------------------------------------------------
-# 5. HTML PAGE ROUTES (restored — these were accidentally dropped before)
-# ----------------------------------------------------
-def serve_html(filename: str):
-    path = BASE_DIR / "static" / filename
-    if path.exists():
-        return FileResponse(path)
-    return HTMLResponse(content=f"<h3>Error: {filename} not found on server</h3>", status_code=404)
-
-@app.get("/")
-def read_root():
-    return serve_html("registration.html")
-
-@app.get("/registration")
-def read_registration():
-    return serve_html("registration.html")
-
-@app.get("/dashboard")
-def read_dashboard():
-    return serve_html("dashboard.html")
-
-@app.get("/profile")
-def read_profile():
-    return serve_html("profile.html")
-
-# ----------------------------------------------------
-# 6. API ENDPOINTS
-# ----------------------------------------------------
-@app.get("/api/health")
-def health_check(db: Session = Depends(get_db)):
-    return {"status": "ok", "database": "connected"}
-
-@app.post("/api/register")
-def register_profile(profile: ProfileCreate, db: Session = Depends(get_db)):
-    existing = db.query(Profile).filter(Profile.device_id == profile.device_id).first()
-    if existing:
-        for key, value in profile.model_dump().items():
-            setattr(existing, key, value)
-    else:
-        db.add(Profile(**profile.model_dump()))
-    db.commit()
-    return {"status": "saved", "device_id": profile.device_id}
+# In-memory mock storage (replace with database query logic if using SQLite/PostgreSQL)
+profiles_db = {}
 
 @app.post("/api/lookup")
-def lookup_profile(req: LookupRequest, db: Session = Depends(get_db)):
-    profile = db.query(Profile).filter(
-        Profile.device_id == req.device_id,
-        Profile.passcode == req.passcode
-    ).first()
-    if not profile:
-        raise HTTPException(status_code=401, detail="Invalid device ID or passcode")
-    return {
-        "device_id": profile.device_id, "name": profile.name, "age": profile.age,
-        "blood_group": profile.blood_group, "emergency_contact": profile.emergency_contact,
-        "medical_conditions": profile.medical_conditions,
-    }
+async def lookup_profile(payload: LookupRequest):
+    """Authenticates a device ID and fetches registered metadata."""
+    device = profiles_db.get(payload.device_id)
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Device ID not found"
+        )
+    
+    if device.get("passcode") != payload.passcode:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Invalid passcode for this device"
+        )
+        
+    return device
 
-@app.post("/api/alerts", response_model=AlertResponse, status_code=status.HTTP_201_CREATED)
-async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
-    new_alert = Alert(
-        device_id=alert.device_id,
-        trigger_type=alert.trigger_type,
-        latitude=alert.latitude,
-        longitude=alert.longitude,
-        status="Active"
-    )
-    db.add(new_alert)
-    db.commit()
-    db.refresh(new_alert)
+@app.post("/api/register")
+async def register_profile(payload: ProfileRegistration):
+    """Registers or updates a hardware node profile."""
+    profiles_db[payload.device_id] = payload.dict()
+    return {"message": "Hardware Node Profile Saved!", "device_id": payload.device_id}
 
-    profile = db.query(Profile).filter(Profile.device_id == alert.device_id).first()
 
-    await manager.broadcast({
-        "device_id": new_alert.device_id,
-        "trigger_type": new_alert.trigger_type,
-        "latitude": new_alert.latitude,
-        "longitude": new_alert.longitude,
-        "name": profile.name if profile else "Unknown (unregistered device)",
-        "age": profile.age if profile else "?",
-        "blood_group": profile.blood_group if profile else "?",
-        "emergency_contact": profile.emergency_contact if profile else "?",
-        "medical_conditions": profile.medical_conditions if profile else "No profile linked",
-    })
-
-    return new_alert
-
-@app.get("/api/alerts", response_model=List[AlertResponse])
-def get_alerts(db: Session = Depends(get_db)):
-    return db.query(Alert).order_by(Alert.timestamp.desc()).all()
-
-@app.websocket("/ws/alerts")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-
-# ----------------------------------------------------
-# 6. STATIC FILES MOUNT (Keep at bottom)
-# ----------------------------------------------------
-static_dir = BASE_DIR / "static"
-if static_dir.exists():
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+if __name__ == "__main__":
+    import uvicorn
+    # Runs server locally on port 8000
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
